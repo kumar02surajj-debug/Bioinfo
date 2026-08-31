@@ -1,0 +1,17 @@
+sample_id,condition,batch,tissue_type
+Sample_Ctrl_01,Control,Batch1,Primary_Tissue
+Sample_Ctrl_02,Control,Batch1,Primary_Tissue
+Sample_Ctrl_03,Control,Batch2,Primary_Tissue
+Sample_Ctrl_04,Control,Batch2,Primary_Tissue
+Sample_Ctrl_05,Control,Batch1,Primary_Tissue
+Sample_Ctrl_06,Control,Batch1,Primary_Tissue
+Sample_Ctrl_07,Control,Batch2,Primary_Tissue
+Sample_Ctrl_08,Control,Batch2,Primary_Tissue
+Sample_Trt_01,Treatment,Batch1,Primary_Tissue
+Sample_Trt_02,Treatment,Batch1,Primary_Tissue
+Sample_Trt_03,Treatment,Batch2,Primary_Tissue
+Sample_Trt_04,Treatment,Batch2,Primary_Tissue
+Sample_Trt_05,Treatment,Batch1,Primary_Tissue
+Sample_Trt_06,Treatment,Batch1,Primary_Tissue
+Sample_Trt_07,Treatment,Batch2,Primary_Tissue
+Sample_Trt_08,Treatment,Batch2,Primary_Tissue

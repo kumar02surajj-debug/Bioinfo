@@ -1,0 +1,17 @@
+sample_id,time,event
+Sample_Ctrl_01,17.5,0
+Sample_Ctrl_02,60.0,0
+Sample_Ctrl_03,45.0,1
+Sample_Ctrl_04,19.4,0
+Sample_Ctrl_05,27.5,0
+Sample_Ctrl_06,50.3,0
+Sample_Ctrl_07,46.8,0
+Sample_Ctrl_08,28.2,0
+Sample_Trt_01,10.5,1
+Sample_Trt_02,28.3,0
+Sample_Trt_03,41.3,1
+Sample_Trt_04,11.4,0
+Sample_Trt_05,10.4,0
+Sample_Trt_06,25.7,0
+Sample_Trt_07,25.0,1
+Sample_Trt_08,20.8,0
