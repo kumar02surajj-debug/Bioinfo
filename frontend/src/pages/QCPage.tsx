@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAnalysis } from '../context/AnalysisContext';
+import { BackButton } from '../components/common/BackButton';
 import * as api from '../services/api';
 import {
   BarChart3,
@@ -63,6 +64,9 @@ export const QCPage: React.FC = () => {
   if (!dataset) {
     return (
       <div className="max-w-4xl mx-auto py-12 text-center space-y-4">
+        <div className="flex justify-start">
+          <BackButton />
+        </div>
         <AlertBanner
           type="info"
           title="No Active Dataset"
@@ -70,7 +74,7 @@ export const QCPage: React.FC = () => {
         />
         <button
           onClick={() => setActiveStep('upload')}
-          className="px-5 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs"
+          className="px-5 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs cursor-pointer"
         >
           Go to Step 01: Upload
         </button>
@@ -84,18 +88,21 @@ export const QCPage: React.FC = () => {
     <div className="max-w-7xl mx-auto space-y-8 pb-12">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-              STEP 02
-            </span>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-100 tracking-tight">
-              Quality Control & PCA
-            </h1>
+        <div className="flex items-center gap-3">
+          <BackButton />
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                STEP 02
+              </span>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-100 tracking-tight">
+                Quality Control & PCA
+              </h1>
+            </div>
+            <p className="text-xs sm:text-sm text-slate-400 mt-1">
+              Evaluate sequencing depth, zero-count proportions, sample correlations, and dimensional reduction on normalized log2(CPM + 1) counts.
+            </p>
           </div>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1">
-            Evaluate sequencing depth, zero-count proportions, sample correlations, and dimensional reduction on normalized log2(CPM + 1) counts.
-          </p>
         </div>
 
         <div className="flex items-center gap-3">

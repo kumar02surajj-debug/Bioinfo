@@ -11,6 +11,7 @@ import {
   Activity,
   FileSpreadsheet,
   BookOpen,
+  HelpCircle,
   CheckCircle2,
   Lock,
   ChevronRight,
@@ -100,6 +101,14 @@ export const Sidebar: React.FC = () => {
       shortLabel: 'Results & Report',
       icon: FileSpreadsheet,
       isUnlocked: () => !!dataset,
+      isCompleted: () => false,
+    },
+    {
+      id: 'howtouse',
+      label: 'How to Use Guide',
+      shortLabel: 'How to Use',
+      icon: HelpCircle,
+      isUnlocked: () => true,
       isCompleted: () => false,
     },
     {

@@ -67,3 +67,86 @@ def test_upload_duplicate_genes_error():
     response = client.post("/api/upload", files=files)
     assert response.status_code == 400
     assert "duplicate gene IDs" in response.json()["detail"]
+
+
+def test_upload_valid_tab_delimited_txt_and_run_deg():
+    expr_tsv = (
+        "gene_id\tS1\tS2\tS3\tS4\n"
+        "TP53\t100\t120\t5\t10\n"
+        "EGFR\t50\t45\t200\t210\n"
+        "MYC\t10\t12\t300\t320\n"
+        "BRCA1\t80\t85\t15\t20\n"
+    )
+    meta_tsv = (
+        "sample_id\tcondition\n"
+        "S1\tControl\n"
+        "S2\tControl\n"
+        "S3\tTreatment\n"
+        "S4\tTreatment\n"
+    )
+    files = {
+        "expression_file": ("expression.txt", expr_tsv.encode("utf-8"), "text/plain"),
+        "metadata_file": ("metadata.txt", meta_tsv.encode("utf-8"), "text/plain"),
+    }
+    upload_res = client.post("/api/upload", files=files)
+    assert upload_res.status_code == 200
+    data = upload_res.json()
+    assert data["gene_count"] == 4
+    assert data["sample_count"] == 4
+    assert "dataset_id" in data
+    dataset_id = data["dataset_id"]
+
+    # Test running DEG on tab-delimited uploaded dataset
+    deg_res = client.post(
+        "/api/differential-expression",
+        json={
+            "dataset_id": dataset_id,
+            "control_group": "Control",
+            "treatment_group": "Treatment",
+            "log2fc_threshold": 1.0,
+            "fdr_threshold": 0.05,
+        }
+    )
+    assert deg_res.status_code == 200
+    deg_data = deg_res.json()
+    assert deg_data["total_tested_genes"] == 4
+    assert deg_data["up_regulated_count"] + deg_data["down_regulated_count"] > 0
+
+
+def test_upload_valid_whitespace_delimited_txt():
+    expr_ws = (
+        "gene_id  S1  S2  S3  S4\n"
+        "TP53  100  120  5  10\n"
+        "EGFR  50  45  200  210\n"
+    )
+    meta_csv = (
+        "sample_id,condition\n"
+        "S1,Control\n"
+        "S2,Control\n"
+        "S3,Treatment\n"
+        "S4,Treatment\n"
+    )
+    files = {
+        "expression_file": ("expression.txt", expr_ws.encode("utf-8"), "text/plain"),
+        "metadata_file": ("metadata.csv", meta_csv.encode("utf-8"), "text/csv"),
+    }
+    response = client.post("/api/upload", files=files)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["gene_count"] == 2
+    assert data["sample_count"] == 4
+
+
+def test_upload_malformed_txt_error():
+    malformed_txt = "invalid_header_only_no_samples\njust_one_word\n"
+    meta_csv = "sample_id,condition\nS1,Control\nS2,Treatment\n"
+    files = {
+        "expression_file": ("malformed.txt", malformed_txt.encode("utf-8"), "text/plain"),
+        "metadata_file": ("metadata.csv", meta_csv.encode("utf-8"), "text/csv"),
+    }
+    response = client.post("/api/upload", files=files)
+    assert response.status_code == 400
+    # Must provide friendly error, not raw python crash
+    detail = response.json()["detail"]
+    assert "Could not parse this file as a gene expression matrix" in detail or "at least 2 sample columns" in detail
+

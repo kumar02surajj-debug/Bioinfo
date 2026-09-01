@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { BackButton } from '../components/common/BackButton';
 import {
   Dna,
   Scale,
@@ -31,18 +32,21 @@ export const DocumentationPage: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-16">
       {/* Header */}
-      <div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-            REFERENCE MANUAL
-          </span>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-100 tracking-tight">
-            Bioinformatics Documentation & Theory
-          </h1>
+      <div className="flex items-center gap-3">
+        <BackButton />
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+              REFERENCE MANUAL
+            </span>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-100 tracking-tight">
+              Bioinformatics Documentation & Theory
+            </h1>
+          </div>
+          <p className="text-xs sm:text-sm text-slate-400 mt-1">
+            In-depth mathematical principles, statistical assumptions, and implementation details powering TranscriptoX.
+          </p>
         </div>
-        <p className="text-xs sm:text-sm text-slate-400 mt-1">
-          In-depth mathematical principles, statistical assumptions, and implementation details powering TranscriptoX.
-        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -99,26 +103,26 @@ export const DocumentationPage: React.FC = () => {
           <div id="data_formats" className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-4">
             <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
               <Code2 className="w-5 h-5 text-emerald-400" />
-              2. Input Data & Matrix Specifications
+              2. Input Data & Matrix Specifications (.CSV and .TXT Supported)
             </h2>
             <p>
-              TranscriptoX accepts standard comma-separated values (CSV) files with strict integrity validation:
+              TranscriptoX accepts standard comma-separated values (CSV) and plain-text delimited (TXT, TSV, whitespace) files with strict integrity validation:
             </p>
             <div className="space-y-3">
               <div>
-                <h4 className="font-semibold text-slate-200">1. Expression Matrix CSV</h4>
+                <h4 className="font-semibold text-slate-200">1. Expression Matrix (.csv or .txt)</h4>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Rows represent distinct gene identifiers (e.g. HGNC symbols like <code>TP53</code>, <code>EGFR</code> or Ensembl IDs), and columns represent sample IDs. Values must be non-negative integer or floating-point read counts.
+                  Rows represent distinct gene identifiers (e.g. HGNC symbols like <code>TP53</code>, <code>EGFR</code> or Ensembl IDs), and columns represent sample IDs. Values must be non-negative integer or floating-point read counts. Comma (<code>,</code>), tab (<code>\t</code>), and whitespace delimiters are automatically sniffed and parsed.
                 </p>
               </div>
               <div>
-                <h4 className="font-semibold text-slate-200">2. Sample Metadata CSV</h4>
+                <h4 className="font-semibold text-slate-200">2. Sample Metadata (.csv or .txt)</h4>
                 <p className="text-xs text-slate-400 mt-0.5">
                   Must contain a <code>sample_id</code> column (exactly matching expression matrix column headers) and a <code>condition</code> column specifying phenotypic groups (e.g., <code>Control</code> vs <code>Treatment</code>).
                 </p>
               </div>
               <div>
-                <h4 className="font-semibold text-slate-200">3. Survival Timeline CSV (Optional)</h4>
+                <h4 className="font-semibold text-slate-200">3. Survival Timeline (.csv or .txt, Optional)</h4>
                 <p className="text-xs text-slate-400 mt-0.5">
                   Must contain <code>sample_id</code>, <code>time</code> (continuous follow-up duration), and <code>event</code> (binary: 0 = censored/alive, 1 = event/deceased).
                 </p>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAnalysis } from '../context/AnalysisContext';
+import { BackButton } from '../components/common/BackButton';
 import * as api from '../services/api';
 import {
   FileSpreadsheet,
@@ -122,9 +123,12 @@ export const ResultsPage: React.FC = () => {
 
   const exportSurvival_CSV = () => {
     if (!survivalResults) return;
-    const header = ['Timeline_Months', 'High_Expression_At_Risk', 'Low_Expression_At_Risk'].join(',');
-    const rows = survivalResults.risk_table.map((r) => `${r.time},${r.high_at_risk},${r.low_at_risk}`);
-    downloadCSV([header, ...rows].join('\n'), `transcriptox_survival_${survivalResults.gene_id}_risk_table.csv`);
+    const header = ['Group', 'Sample_Count', 'Event_Count', 'Median_Survival'].join(',');
+    const rows = [
+      `"High Expression",${survivalResults.high_group.sample_count},${survivalResults.high_group.event_count},${survivalResults.high_group.median_survival_time ?? 'N/A'}`,
+      `"Low Expression",${survivalResults.low_group.sample_count},${survivalResults.low_group.event_count},${survivalResults.low_group.median_survival_time ?? 'N/A'}`,
+    ];
+    downloadCSV([header, ...rows].join('\n'), `transcriptox_survival_${survivalResults.gene_id}.csv`);
   };
 
   const exportAllCSVs = () => {
@@ -161,6 +165,9 @@ export const ResultsPage: React.FC = () => {
   if (!dataset) {
     return (
       <div className="max-w-4xl mx-auto py-12 text-center space-y-4">
+        <div className="flex justify-start">
+          <BackButton />
+        </div>
         <AlertBanner
           type="info"
           title="No Active Dataset"
@@ -168,7 +175,7 @@ export const ResultsPage: React.FC = () => {
         />
         <button
           onClick={() => setActiveStep('upload')}
-          className="px-5 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs"
+          className="px-5 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs cursor-pointer"
         >
           Go to Step 01: Upload
         </button>
@@ -180,18 +187,21 @@ export const ResultsPage: React.FC = () => {
     <div className="max-w-7xl mx-auto space-y-8 pb-12">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-              RESULTS HUB & EXPORT
-            </span>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-100 tracking-tight">
-              Pipeline Results & Report Center
-            </h1>
+        <div className="flex items-center gap-3">
+          <BackButton />
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                RESULTS HUB & EXPORT
+              </span>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-100 tracking-tight">
+                Pipeline Results & Report Center
+              </h1>
+            </div>
+            <p className="text-xs sm:text-sm text-slate-400 mt-1">
+              Consolidated summary across QC, PCA, differential expression, clustering, pathway enrichment, and clinical prognosis.
+            </p>
           </div>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1">
-            Consolidated summary across QC, PCA, differential expression, clustering, pathway enrichment, and clinical prognosis.
-          </p>
         </div>
 
         {/* Generate HTML Report Button */}

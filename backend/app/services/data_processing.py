@@ -56,6 +56,131 @@ def store_dataset(
     return data_entry
 
 
+def _detect_delimiter(sample_lines: List[str]) -> str:
+    """
+    Detects whether a table is tab, comma, whitespace, or semicolon separated.
+    Restricts detection to standard data table delimiters.
+    """
+    first_line = ""
+    for line in sample_lines:
+        line_s = line.strip()
+        if line_s and not line_s.startswith("#"):
+            first_line = line_s
+            break
+
+    if not first_line:
+        return ","
+
+    tab_count = first_line.count("\t")
+    comma_count = first_line.count(",")
+    semi_count = first_line.count(";")
+
+    if tab_count > 0 and tab_count >= comma_count:
+        return "\t"
+    if comma_count > 0:
+        return ","
+    if semi_count > 0:
+        return ";"
+
+    import re
+    if re.search(r"\s+", first_line):
+        return r"\s+"
+
+    return ","
+
+
+def _parse_delimited_expression(content: bytes) -> pd.DataFrame:
+    """
+    Parse CSV or plain-text (tab, comma, whitespace delimited) expression matrix.
+    Ensures friendly error messages when delimiter cannot be detected or shape is invalid.
+    """
+    try:
+        expr_str = content.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        try:
+            expr_str = content.decode("latin-1")
+        except Exception:
+            raise ValidationError("Expression matrix must be a valid UTF-8 or ASCII encoded text file (.csv or .txt).")
+
+    if not expr_str or not expr_str.strip():
+        raise ValidationError("Expression matrix file is empty.")
+
+    lines = expr_str.strip().splitlines()
+    primary_sep = _detect_delimiter(lines[:5])
+
+    expr_df = None
+    candidates = [primary_sep]
+    for sep in ["\t", ",", r"\s+", ";"]:
+        if sep not in candidates:
+            candidates.append(sep)
+
+    for sep in candidates:
+        try:
+            df = pd.read_csv(
+                io.StringIO(expr_str),
+                sep=sep,
+                engine="python" if (sep == r"\s+" or sep == ";") else "c",
+                index_col=0
+            )
+            if df is not None and not df.empty and df.shape[1] >= 1:
+                valid_cols = [c for c in df.columns if not str(c).startswith("Unnamed:")]
+                if len(valid_cols) >= 1:
+                    expr_df = df[valid_cols]
+                    break
+        except Exception:
+            continue
+
+    if expr_df is None or expr_df.empty or expr_df.shape[1] < 1:
+        raise ValidationError("Could not parse this file as a gene expression matrix. Please check the format and try again.")
+
+    return expr_df
+
+
+def _parse_delimited_table(content: bytes, table_name: str = "Metadata") -> pd.DataFrame:
+    """
+    Parse CSV or plain-text table for metadata or survival data.
+    """
+    try:
+        text_str = content.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        try:
+            text_str = content.decode("latin-1")
+        except Exception:
+            raise ValidationError(f"{table_name} file must be a valid UTF-8 or ASCII encoded text file (.csv or .txt).")
+
+    if not text_str or not text_str.strip():
+        raise ValidationError(f"{table_name} file is empty.")
+
+    lines = text_str.strip().splitlines()
+    primary_sep = _detect_delimiter(lines[:5])
+
+    table_df = None
+    candidates = [primary_sep]
+    for sep in ["\t", ",", r"\s+", ";"]:
+        if sep not in candidates:
+            candidates.append(sep)
+
+    for sep in candidates:
+        try:
+            df = pd.read_csv(
+                io.StringIO(text_str),
+                sep=sep,
+                engine="python" if (sep == r"\s+" or sep == ";") else "c"
+            )
+            if df is not None and not df.empty and df.shape[1] >= 2:
+                valid_cols = [c for c in df.columns if not str(c).startswith("Unnamed:")]
+                if len(valid_cols) >= 2:
+                    table_df = df[valid_cols]
+                    break
+        except Exception:
+            continue
+
+    if table_df is None or table_df.empty:
+        raise ValidationError(f"Could not parse {table_name} file. Please ensure it is a valid CSV or tab-delimited text file.")
+
+    return table_df
+
+
 def validate_and_parse_csvs(
     expression_content: bytes,
     metadata_content: bytes,
@@ -63,19 +188,13 @@ def validate_and_parse_csvs(
     dataset_name: str = "Uploaded Dataset"
 ) -> Tuple[str, UploadResponse]:
     """
-    Validate and parse uploaded CSV files with friendly, actionable error messages.
+    Validate and parse uploaded CSV or TXT files with friendly, actionable error messages.
     """
-    # 1. Parse Expression Matrix
-    try:
-        expr_str = expression_content.decode("utf-8-sig")
-        expr_df = pd.read_csv(io.StringIO(expr_str), index_col=0)
-    except UnicodeDecodeError:
-        raise ValidationError("Expression matrix must be a UTF-8 encoded CSV file.")
-    except Exception as e:
-        raise ValidationError(f"Failed to parse Expression CSV: {str(e)}")
+    # 1. Parse Expression Matrix (CSV or TXT)
+    expr_df = _parse_delimited_expression(expression_content)
 
     if expr_df.empty:
-        raise ValidationError("Expression matrix CSV is empty.")
+        raise ValidationError("Expression matrix is empty.")
 
     # Check gene ID index
     if expr_df.index.has_duplicates:
@@ -114,15 +233,8 @@ def validate_and_parse_csvs(
     # Clean index strings
     expr_df.index = [str(g).strip() for g in expr_df.index]
 
-    # 2. Parse Metadata CSV
-    try:
-        meta_str = metadata_content.decode("utf-8-sig")
-        meta_df = pd.read_csv(io.StringIO(meta_str))
-    except Exception as e:
-        raise ValidationError(f"Failed to parse Metadata CSV: {str(e)}")
-
-    if meta_df.empty:
-        raise ValidationError("Metadata CSV is empty.")
+    # 2. Parse Metadata (CSV or TXT)
+    meta_df = _parse_delimited_table(metadata_content, table_name="Metadata")
 
     # Check columns
     meta_df.columns = [str(c).strip().lower() for c in meta_df.columns]
@@ -145,7 +257,7 @@ def validate_and_parse_csvs(
         cond_col = meta_df.columns[1] # Default to second column
 
     if not cond_col:
-        raise ValidationError("Metadata CSV must have a 'condition' (or 'group') column defining sample classes.")
+        raise ValidationError("Metadata file must have a 'condition' (or 'group') column defining sample classes.")
 
     meta_df["sample_id"] = meta_df[sample_col].astype(str).str.strip()
     meta_df["condition"] = meta_df[cond_col].astype(str).str.strip()
@@ -155,7 +267,7 @@ def validate_and_parse_csvs(
     expr_samples = set(expr_df.columns)
 
     if meta_df["sample_id"].duplicated().any():
-        raise ValidationError("Metadata CSV contains duplicate sample IDs.")
+        raise ValidationError("Metadata file contains duplicate sample IDs.")
 
     if meta_samples != expr_samples:
         missing_in_meta = list(expr_samples - meta_samples)[:4]
@@ -176,12 +288,11 @@ def validate_and_parse_csvs(
 
     condition_counts = meta_df["condition"].value_counts().to_dict()
 
-    # 3. Parse Survival CSV (if provided)
+    # 3. Parse Survival (CSV or TXT) (if provided)
     survival_df = None
     if survival_content and len(survival_content.strip()) > 0:
         try:
-            surv_str = survival_content.decode("utf-8-sig")
-            surv_df = pd.read_csv(io.StringIO(surv_str))
+            surv_df = _parse_delimited_table(survival_content, table_name="Survival")
             surv_df.columns = [str(c).strip().lower() for c in surv_df.columns]
 
             # Find sample_id, time, event
@@ -206,14 +317,14 @@ def validate_and_parse_csvs(
                     break
 
             if not t_col or not e_col:
-                raise ValidationError("Survival CSV must contain 'sample_id', 'time' (numeric), and 'event' (0 or 1) columns.")
+                raise ValidationError("Survival file must contain 'sample_id', 'time' (numeric), and 'event' (0 or 1) columns.")
 
             surv_df["sample_id"] = surv_df[s_col].astype(str).str.strip()
             surv_df["time"] = pd.to_numeric(surv_df[t_col], errors='coerce')
             surv_df["event"] = pd.to_numeric(surv_df[e_col], errors='coerce')
 
             if surv_df["time"].isna().any():
-                raise ValidationError("Survival CSV contains non-numeric or missing time values.")
+                raise ValidationError("Survival file contains non-numeric or missing time values.")
             if (surv_df["time"] < 0).any():
                 raise ValidationError("Survival times must be non-negative (>= 0).")
 
@@ -233,7 +344,7 @@ def validate_and_parse_csvs(
         except ValidationError:
             raise
         except Exception as e:
-            raise ValidationError(f"Failed to parse Survival CSV: {str(e)}")
+            raise ValidationError(f"Failed to parse Survival file: {str(e)}")
 
     # Store in memory
     dataset_id = str(uuid.uuid4())

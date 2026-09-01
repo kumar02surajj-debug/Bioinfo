@@ -36,6 +36,8 @@ export interface SavedSession {
 interface AnalysisContextType {
   activeStep: AnalysisStep;
   setActiveStep: (step: AnalysisStep) => void;
+  goBack: () => void;
+  canGoBack: boolean;
   backendHealth: HealthResponse | null;
   isBackendConnected: boolean;
   isCheckingHealth: boolean;
@@ -84,8 +86,92 @@ interface AnalysisContextType {
 
 const AnalysisContext = createContext<AnalysisContextType | undefined>(undefined);
 
+const VALID_STEPS: AnalysisStep[] = [
+  'dashboard',
+  'upload',
+  'qc',
+  'differential',
+  'clustering',
+  'enrichment',
+  'survival',
+  'results',
+  'docs',
+  'howtouse',
+];
+
 export const AnalysisProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [activeStep, setActiveStep] = useState<AnalysisStep>('dashboard');
+  const getInitialStep = (): AnalysisStep => {
+    try {
+      const hash = window.location.hash.replace('#', '') as AnalysisStep;
+      if (VALID_STEPS.includes(hash)) {
+        return hash;
+      }
+    } catch {
+      // ignore
+    }
+    return 'dashboard';
+  };
+
+  const [activeStep, setActiveStepState] = useState<AnalysisStep>(getInitialStep);
+  const [historyStack, setHistoryStack] = useState<AnalysisStep[]>([getInitialStep()]);
+
+  const setActiveStep = (step: AnalysisStep) => {
+    if (step === activeStep) return;
+    setActiveStepState(step);
+    setHistoryStack((prev) => [...prev, step]);
+    try {
+      const newUrl = step === 'dashboard' ? window.location.pathname : `${window.location.pathname}#${step}`;
+      window.history.pushState({ step }, '', newUrl);
+    } catch {
+      // ignore
+    }
+  };
+
+  const goBack = () => {
+    if (historyStack.length > 1) {
+      const newStack = [...historyStack];
+      newStack.pop(); // remove current page
+      const previousStep = newStack[newStack.length - 1];
+      setHistoryStack(newStack);
+      setActiveStepState(previousStep);
+      try {
+        const newUrl = previousStep === 'dashboard' ? window.location.pathname : `${window.location.pathname}#${previousStep}`;
+        window.history.pushState({ step: previousStep }, '', newUrl);
+      } catch {
+        // ignore
+      }
+    } else {
+      // Fallback to Dashboard when landing directly on a deep-linked URL or no prior history
+      setHistoryStack(['dashboard']);
+      setActiveStepState('dashboard');
+      try {
+        window.history.replaceState({ step: 'dashboard' }, '', window.location.pathname);
+      } catch {
+        // ignore
+      }
+    }
+  };
+
+  // Sync with browser back/forward buttons (popstate)
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      const targetStep = (e.state?.step as AnalysisStep) ||
+        (window.location.hash.replace('#', '') as AnalysisStep) ||
+        'dashboard';
+      if (VALID_STEPS.includes(targetStep)) {
+        setActiveStepState(targetStep);
+        setHistoryStack((prev) => {
+          if (prev.length > 1 && prev[prev.length - 2] === targetStep) {
+            return prev.slice(0, prev.length - 1);
+          }
+          return [...prev, targetStep];
+        });
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   const [backendHealth, setBackendHealth] = useState<HealthResponse | null>(null);
   const [isBackendConnected, setIsBackendConnected] = useState<boolean>(false);
   const [isCheckingHealth, setIsCheckingHealth] = useState<boolean>(true);
@@ -239,6 +325,8 @@ export const AnalysisProvider: React.FC<{ children: ReactNode }> = ({ children }
       value={{
         activeStep,
         setActiveStep,
+        goBack,
+        canGoBack: historyStack.length > 1 || activeStep !== 'dashboard',
         backendHealth,
         isBackendConnected,
         isCheckingHealth,

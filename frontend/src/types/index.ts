@@ -7,7 +7,8 @@ export type AnalysisStep =
   | 'enrichment'
   | 'survival'
   | 'results'
-  | 'docs';
+  | 'docs'
+  | 'howtouse';
 
 export interface HealthResponse {
   status: string;

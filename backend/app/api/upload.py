@@ -18,9 +18,9 @@ router = APIRouter(prefix="/api/upload", tags=["Upload"])
 
 @router.post("", response_model=UploadResponse)
 async def upload_dataset_endpoint(
-    expression_file: UploadFile = File(..., description="Expression matrix CSV (genes x samples)"),
-    metadata_file: UploadFile = File(..., description="Sample metadata CSV (sample_id, condition)"),
-    survival_file: Optional[UploadFile] = File(None, description="Optional survival data CSV (sample_id, time, event)"),
+    expression_file: UploadFile = File(..., description="Expression matrix CSV or TXT (genes x samples)"),
+    metadata_file: UploadFile = File(..., description="Sample metadata CSV or TXT (sample_id, condition)"),
+    survival_file: Optional[UploadFile] = File(None, description="Optional survival data CSV or TXT (sample_id, time, event)"),
     dataset_name: Optional[str] = Form(None, description="Optional custom name for dataset")
 ):
     try:

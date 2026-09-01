@@ -12,6 +12,7 @@ import { EnrichmentPage } from './pages/EnrichmentPage';
 import { SurvivalPage } from './pages/SurvivalPage';
 import { ResultsPage } from './pages/ResultsPage';
 import { DocumentationPage } from './pages/DocumentationPage';
+import { HowToUsePage } from './pages/HowToUsePage';
 
 const MainContent: React.FC = () => {
   const { activeStep } = useAnalysis();
@@ -36,6 +37,8 @@ const MainContent: React.FC = () => {
         return <ResultsPage />;
       case 'docs':
         return <DocumentationPage />;
+      case 'howtouse':
+        return <HowToUsePage />;
       default:
         return <DashboardPage />;
     }

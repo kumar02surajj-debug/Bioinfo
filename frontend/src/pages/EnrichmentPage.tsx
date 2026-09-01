@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAnalysis } from '../context/AnalysisContext';
+import { BackButton } from '../components/common/BackButton';
 import * as api from '../services/api';
 import type { PathwayItem, RegulationFilter } from '../types';
 import {
@@ -67,6 +68,9 @@ export const EnrichmentPage: React.FC = () => {
   if (!dataset) {
     return (
       <div className="max-w-4xl mx-auto py-12 text-center space-y-4">
+        <div className="flex justify-start">
+          <BackButton />
+        </div>
         <AlertBanner
           type="info"
           title="No Active Dataset"
@@ -74,7 +78,7 @@ export const EnrichmentPage: React.FC = () => {
         />
         <button
           onClick={() => setActiveStep('upload')}
-          className="px-5 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs"
+          className="px-5 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs cursor-pointer"
         >
           Go to Step 01: Upload
         </button>
@@ -119,7 +123,7 @@ export const EnrichmentPage: React.FC = () => {
       sortable: true,
       align: 'right',
       render: (row) => (
-        <span className={row.adj_p_value < 0.05 ? 'text-rose-400 font-bold' : 'text-slate-400'}>
+        <span className={row.adj_p_value < 0.05 ? 'text-emerald-400 font-semibold' : 'text-slate-400'}>
           {row.adj_p_value < 0.0001 ? row.adj_p_value.toExponential(3) : row.adj_p_value.toFixed(4)}
         </span>
       ),
@@ -136,11 +140,26 @@ export const EnrichmentPage: React.FC = () => {
       ),
     },
     {
+      key: 'combined_score',
+      header: 'Combined Score',
+      sortable: true,
+      align: 'right',
+      render: (row) => (row.combined_score ? row.combined_score.toFixed(1) : 'N/A'),
+    },
+    {
       key: 'genes',
       header: 'Overlapping Genes',
+      sortable: false,
       render: (row) => (
-        <div className="max-w-xs truncate text-[11px] text-slate-400 font-mono" title={row.genes.join(', ')}>
-          {row.genes.join(', ')}
+        <div className="flex flex-wrap gap-1 max-w-sm">
+          {row.genes.slice(0, 5).map((g) => (
+            <span key={g} className="px-1.5 py-0.5 rounded bg-slate-800 text-cyan-300 text-[10px] font-mono">
+              {g}
+            </span>
+          ))}
+          {row.genes.length > 5 && (
+            <span className="text-[10px] text-slate-500 font-mono">+{row.genes.length - 5} more</span>
+          )}
         </div>
       ),
     },
@@ -150,18 +169,21 @@ export const EnrichmentPage: React.FC = () => {
     <div className="max-w-7xl mx-auto space-y-8 pb-12">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-              STEP 05
-            </span>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-100 tracking-tight">
-              Functional Pathway Enrichment
-            </h1>
+        <div className="flex items-center gap-3">
+          <BackButton />
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                STEP 05
+              </span>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-100 tracking-tight">
+                Functional Pathway Enrichment
+              </h1>
+            </div>
+            <p className="text-xs sm:text-sm text-slate-400 mt-1">
+              Over-representation analysis against Gene Ontology (BP, MF, CC), KEGG, and Reactome knowledgebases.
+            </p>
           </div>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1">
-            Over-representation analysis against Gene Ontology (BP, MF, CC), KEGG, and Reactome knowledgebases.
-          </p>
         </div>
 
         {dataset.has_survival ? (

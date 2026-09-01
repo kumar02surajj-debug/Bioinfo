@@ -13,8 +13,9 @@ import {
   Sparkles,
   Database,
   CheckCircle2,
-  HelpCircle,
   Layers,
+  Compass,
+  BookOpen,
 } from 'lucide-react';
 import { AlertBanner } from '../components/common/AlertBanner';
 
@@ -119,10 +120,10 @@ export const DashboardPage: React.FC = () => {
           </p>
 
           {/* Call to Actions */}
-          <div className="flex flex-wrap items-center gap-4 pt-2">
+          <div className="flex flex-wrap items-center gap-3 pt-2">
             <button
               onClick={() => setActiveStep('upload')}
-              className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-sm shadow-lg shadow-cyan-500/25 transition-all transform hover:-translate-y-0.5"
+              className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-sm shadow-lg shadow-cyan-500/25 transition-all transform hover:-translate-y-0.5 cursor-pointer"
             >
               <UploadCloud className="w-4 h-4" />
               <span>Upload Your Data</span>
@@ -132,18 +133,26 @@ export const DashboardPage: React.FC = () => {
             <button
               onClick={handleLoadDemo}
               disabled={loadingState['loadDemo'] || !isBackendConnected}
-              className="flex items-center gap-2 px-5 py-3 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-slate-200 font-semibold text-sm transition-all hover:border-cyan-500/40 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-5 py-3 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-slate-200 font-semibold text-sm transition-all hover:border-cyan-500/40 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               <Database className="w-4 h-4 text-cyan-400" />
               <span>{loadingState['loadDemo'] ? 'Loading Synthetic Demo...' : 'Load Synthetic Demo Dataset'}</span>
             </button>
 
             <button
-              onClick={() => setActiveStep('docs')}
-              className="flex items-center gap-1.5 px-4 py-3 rounded-xl text-slate-400 hover:text-slate-200 text-sm font-medium transition-colors"
+              onClick={() => setActiveStep('howtouse')}
+              className="flex items-center gap-2 px-4 py-3 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 text-sm font-semibold transition-all cursor-pointer"
             >
-              <HelpCircle className="w-4 h-4" />
-              <span>Pipeline Documentation</span>
+              <Compass className="w-4 h-4 text-cyan-400" />
+              <span>How to Use Guide</span>
+            </button>
+
+            <button
+              onClick={() => setActiveStep('docs')}
+              className="flex items-center gap-1.5 px-4 py-3 rounded-xl text-slate-400 hover:text-slate-200 text-sm font-medium transition-colors cursor-pointer"
+            >
+              <BookOpen className="w-4 h-4" />
+              <span>Docs & Theory</span>
             </button>
           </div>
 

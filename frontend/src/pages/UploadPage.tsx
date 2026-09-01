@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useAnalysis } from '../context/AnalysisContext';
+import { BackButton } from '../components/common/BackButton';
 import * as api from '../services/api';
 import {
   UploadCloud,
@@ -41,11 +42,11 @@ export const UploadPage: React.FC = () => {
     clearErrors();
 
     if (!expressionFile) {
-      setError('upload', 'Please select an Expression Matrix CSV file.');
+      setError('upload', 'Please select an Expression Matrix (.csv or .txt) file.');
       return;
     }
     if (!metadataFile) {
-      setError('upload', 'Please select a Sample Metadata CSV file.');
+      setError('upload', 'Please select a Sample Metadata (.csv or .txt) file.');
       return;
     }
 
@@ -78,26 +79,29 @@ export const UploadPage: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-12">
-      {/* Header */}
+      {/* Header with BackButton */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-              STEP 01
-            </span>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-100 tracking-tight">
-              Data Ingestion & Validation
-            </h1>
+        <div className="flex items-center gap-3">
+          <BackButton />
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                STEP 01
+              </span>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-100 tracking-tight">
+                Data Ingestion & Validation
+              </h1>
+            </div>
+            <p className="text-xs sm:text-sm text-slate-400 mt-1">
+              Upload your RNA-seq count matrix and sample metadata, or load our pre-configured synthetic demo dataset.
+            </p>
           </div>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1">
-            Upload your RNA-seq count matrix and sample metadata, or load our pre-configured synthetic demo dataset.
-          </p>
         </div>
 
         <button
           onClick={handleLoadDemo}
           disabled={loadingState['demo'] || !isBackendConnected}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 font-semibold text-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 font-semibold text-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed shrink-0 cursor-pointer"
         >
           <Database className="w-4 h-4 text-cyan-400" />
           <span>{loadingState['demo'] ? 'Loading Synthetic Demo...' : 'Load Synthetic Demo Dataset'}</span>
@@ -141,14 +145,17 @@ export const UploadPage: React.FC = () => {
               Required
             </span>
           </div>
-          <p className="text-xs text-slate-400 mb-4 leading-relaxed">
-            CSV table with gene IDs as rows and sample IDs as columns. Values should be non-negative raw count values.
+          <p className="text-xs text-slate-400 mb-2 leading-relaxed">
+            Gene expression count matrix with gene IDs as rows and sample IDs as columns. Values should be non-negative counts.
           </p>
+          <div className="inline-block mb-3 px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/80 text-[11px] font-mono text-cyan-300">
+            Accepted formats: .csv, .txt
+          </div>
 
           <input
             type="file"
             ref={exprInputRef}
-            accept=".csv"
+            accept=".csv,.txt,text/plain,text/csv"
             onChange={(e) => setExpressionFile(e.target.files?.[0] || null)}
             className="hidden"
           />
@@ -161,7 +168,7 @@ export const UploadPage: React.FC = () => {
               </div>
               <button
                 onClick={() => setExpressionFile(null)}
-                className="text-slate-500 hover:text-rose-400 p-1 transition-colors"
+                className="text-slate-500 hover:text-rose-400 p-1 transition-colors cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
@@ -170,11 +177,11 @@ export const UploadPage: React.FC = () => {
             <button
               type="button"
               onClick={() => exprInputRef.current?.click()}
-              className="w-full py-8 border-2 border-dashed border-slate-700 hover:border-cyan-500/50 rounded-xl bg-slate-950/40 flex flex-col items-center justify-center gap-2 text-xs text-slate-400 hover:text-slate-200 transition-all"
+              className="w-full py-8 border-2 border-dashed border-slate-700 hover:border-cyan-500/50 rounded-xl bg-slate-950/40 flex flex-col items-center justify-center gap-2 text-xs text-slate-400 hover:text-slate-200 transition-all cursor-pointer"
             >
               <UploadCloud className="w-6 h-6 text-slate-500" />
-              <span>Select expression.csv</span>
-              <span className="text-[10px] text-slate-600">CSV format (genes x samples)</span>
+              <span>Select expression file (.csv or .txt)</span>
+              <span className="text-[10px] text-slate-600">Delimited format (genes x samples)</span>
             </button>
           )}
         </div>
@@ -196,14 +203,17 @@ export const UploadPage: React.FC = () => {
               Required
             </span>
           </div>
-          <p className="text-xs text-slate-400 mb-4 leading-relaxed">
-            CSV containing <code className="text-slate-300">sample_id</code> and <code className="text-slate-300">condition</code> columns matching expression column names.
+          <p className="text-xs text-slate-400 mb-2 leading-relaxed">
+            Table containing <code className="text-slate-300">sample_id</code> and <code className="text-slate-300">condition</code> columns matching expression column names.
           </p>
+          <div className="inline-block mb-3 px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/80 text-[11px] font-mono text-emerald-300">
+            Accepted formats: .csv, .txt
+          </div>
 
           <input
             type="file"
             ref={metaInputRef}
-            accept=".csv"
+            accept=".csv,.txt,text/plain,text/csv"
             onChange={(e) => setMetadataFile(e.target.files?.[0] || null)}
             className="hidden"
           />
@@ -216,7 +226,7 @@ export const UploadPage: React.FC = () => {
               </div>
               <button
                 onClick={() => setMetadataFile(null)}
-                className="text-slate-500 hover:text-rose-400 p-1 transition-colors"
+                className="text-slate-500 hover:text-rose-400 p-1 transition-colors cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
@@ -225,11 +235,11 @@ export const UploadPage: React.FC = () => {
             <button
               type="button"
               onClick={() => metaInputRef.current?.click()}
-              className="w-full py-8 border-2 border-dashed border-slate-700 hover:border-emerald-500/50 rounded-xl bg-slate-950/40 flex flex-col items-center justify-center gap-2 text-xs text-slate-400 hover:text-slate-200 transition-all"
+              className="w-full py-8 border-2 border-dashed border-slate-700 hover:border-emerald-500/50 rounded-xl bg-slate-950/40 flex flex-col items-center justify-center gap-2 text-xs text-slate-400 hover:text-slate-200 transition-all cursor-pointer"
             >
               <UploadCloud className="w-6 h-6 text-slate-500" />
-              <span>Select metadata.csv</span>
-              <span className="text-[10px] text-slate-600">CSV format (sample_id, condition)</span>
+              <span>Select metadata file (.csv or .txt)</span>
+              <span className="text-[10px] text-slate-600">Format (sample_id, condition)</span>
             </button>
           )}
         </div>
@@ -251,14 +261,17 @@ export const UploadPage: React.FC = () => {
               Optional
             </span>
           </div>
-          <p className="text-xs text-slate-400 mb-4 leading-relaxed">
-            CSV containing <code className="text-slate-300">sample_id</code>, <code className="text-slate-300">time</code> (months/days), and <code className="text-slate-300">event</code> (0=censored, 1=event).
+          <p className="text-xs text-slate-400 mb-2 leading-relaxed">
+            Table containing <code className="text-slate-300">sample_id</code>, <code className="text-slate-300">time</code> (months/days), and <code className="text-slate-300">event</code> (0=censored, 1=event).
           </p>
+          <div className="inline-block mb-3 px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700/80 text-[11px] font-mono text-rose-300">
+            Accepted formats: .csv, .txt
+          </div>
 
           <input
             type="file"
             ref={survInputRef}
-            accept=".csv"
+            accept=".csv,.txt,text/plain,text/csv"
             onChange={(e) => setSurvivalFile(e.target.files?.[0] || null)}
             className="hidden"
           />
@@ -271,7 +284,7 @@ export const UploadPage: React.FC = () => {
               </div>
               <button
                 onClick={() => setSurvivalFile(null)}
-                className="text-slate-500 hover:text-rose-400 p-1 transition-colors"
+                className="text-slate-500 hover:text-rose-400 p-1 transition-colors cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
@@ -280,11 +293,11 @@ export const UploadPage: React.FC = () => {
             <button
               type="button"
               onClick={() => survInputRef.current?.click()}
-              className="w-full py-8 border-2 border-dashed border-slate-700 hover:border-rose-500/50 rounded-xl bg-slate-950/40 flex flex-col items-center justify-center gap-2 text-xs text-slate-400 hover:text-slate-200 transition-all"
+              className="w-full py-8 border-2 border-dashed border-slate-700 hover:border-rose-500/50 rounded-xl bg-slate-950/40 flex flex-col items-center justify-center gap-2 text-xs text-slate-400 hover:text-slate-200 transition-all cursor-pointer"
             >
               <UploadCloud className="w-6 h-6 text-slate-500" />
-              <span>Select survival.csv</span>
-              <span className="text-[10px] text-slate-600">CSV format (sample_id, time, event)</span>
+              <span>Select survival file (.csv or .txt)</span>
+              <span className="text-[10px] text-slate-600">Format (sample_id, time, event)</span>
             </button>
           )}
         </div>
