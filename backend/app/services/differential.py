@@ -77,11 +77,17 @@ def _welch_ttest_vectorized(
         se2_b = np.where(n_b_valid > 0, var_b / np.maximum(n_b_valid, 1), 0.0)
         se2_sum = se2_a + se2_b
 
+        diff = mean_a - mean_b
+
+        # Numerical stabilization: If se2_sum is 0 but diff != 0 (e.g., constant 0 in control, constant count in treatment),
+        # use a variance floor (1e-12) to avoid zero division without destroying true signal.
+        se2_sum_safe = np.where(se2_sum > 0, se2_sum, 1e-12)
+
         # Welch t-statistic
-        t_stat = np.where(se2_sum > 0, (mean_a - mean_b) / np.sqrt(se2_sum), 0.0)
+        t_stat = np.where(diff == 0.0, 0.0, diff / np.sqrt(se2_sum_safe))
 
         # Welch-Satterthwaite degrees of freedom
-        num = se2_sum ** 2
+        num = np.where(se2_sum > 0, se2_sum ** 2, 1e-24)
         denom = np.where(n_a_valid > 1, (se2_a ** 2) / np.maximum(n_a_valid - 1, 1), 0.0) + \
                 np.where(n_b_valid > 1, (se2_b ** 2) / np.maximum(n_b_valid - 1, 1), 0.0)
         df = np.where(denom > 0, num / denom, 1.0)
@@ -332,8 +338,12 @@ def compute_differential_expression(
     # when nan_policy='omit' is used with a 2-D array (scipy ≥ 1.9 bug).
     _, p_values = _welch_ttest_vectorized(trt_matrix, ctrl_matrix)
 
-    # ---- Diagnostic logging ----------------------------------------- #
+    # ---- Diagnostic logging: Input state & groups ------------------- #
     nan_count = int(np.sum(~np.isfinite(p_values)))
+    logger.info(
+        "DEG Diagnostic — dataset: %s, tested_genes: %d, ctrl_group: '%s' (n=%d: %s), trt_group: '%s' (n=%d: %s)",
+        dataset_id, n_genes, control_group, n_ctrl, ctrl_samples[:4], treatment_group, n_trt, trt_samples[:4],
+    )
     logger.info(
         "Raw p-value stats — min: %.3e  max: %.3f  mean: %.3f  NaN/Inf: %d / %d",
         float(np.min(p_values)), float(np.max(p_values)),
@@ -351,6 +361,23 @@ def compute_differential_expression(
         "After BH correction — genes with adj_p ≤ %.3f: %d / %d",
         fdr_threshold, n_passing_fdr, n_genes,
     )
+
+    # Log diagnostic sample gene stats for known/top genes
+    diagnostic_target_genes = ["TAP2-6", "HSPA1A-5", "ZDHHC3-2", "HSPA1B-3", "TNFRSF11B", "GDF10"]
+    gene_map = {g: i for i, g in enumerate(genes)}
+    for target in diagnostic_target_genes:
+        if target in gene_map:
+            idx = gene_map[target]
+            raw_p = float(p_values[idx])
+            padj = float(adj_p_values[idx])
+            fc = float(log2fc_values[idx])
+            pass_fdr = padj <= fdr_threshold
+            pass_fc = abs(fc) >= log2fc_threshold
+            is_sig = pass_fdr and pass_fc
+            logger.info(
+                "Diagnostic Gene '%s' — log2FC: %.4f, raw_p: %.4e, padj: %.4e | pass_fdr: %s, pass_fc: %s => DEG: %s",
+                target, fc, raw_p, padj, pass_fdr, pass_fc, is_sig,
+            )
 
     # ---- Cache the per-gene stats arrays (NOT the thresholded output) -- #
     data["_deg_stats_cache"] = {

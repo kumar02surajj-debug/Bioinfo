@@ -33,8 +33,12 @@ def normalize_cpm_log2(raw_counts: pd.DataFrame, prior_count: float = 1.0) -> pd
     max_val = float(np.nanmax(vals)) if vals.size > 0 else 0.0
     min_val = float(np.nanmin(vals)) if vals.size > 0 else 0.0
 
-    # If max value <= 50.0 and min >= 0.0, the matrix is already log-scale/normalized!
-    if max_val <= 50.0 and min_val >= 0.0 and max_val > 0.0:
+    # Check if data consists entirely of integer count values (raw counts)
+    is_integer_table = bool(vals.size > 0 and np.all(np.equal(np.mod(vals, 1), 0)))
+
+    # If max value <= 50.0 and min >= 0.0 AND values are continuous floats (not raw integers),
+    # the matrix is already log-scale/normalized!
+    if max_val <= 50.0 and min_val >= 0.0 and max_val > 0.0 and not is_integer_table:
         logger.info(
             "Expression matrix is pre-normalized / log-transformed (max=%.2f, min=%.2f). Using directly.",
             max_val, min_val,

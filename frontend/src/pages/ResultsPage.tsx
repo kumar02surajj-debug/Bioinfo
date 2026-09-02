@@ -235,6 +235,19 @@ export const ResultsPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Report Generation Loading Progress Banner */}
+      {isGeneratingReport && (
+        <div className="p-4 rounded-xl bg-cyan-950/40 border border-cyan-500/30 text-cyan-200 backdrop-blur-md flex items-center gap-3 shadow-lg">
+          <div className="w-4 h-4 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin shrink-0" />
+          <div className="text-xs">
+            <span className="font-semibold text-cyan-300">Building Standalone HTML Audit Report...</span>
+            <span className="opacity-80 block text-[11px] mt-0.5">
+              Compiling methodology, high-resolution SVG plots, interactive tables, and full pipeline audit metrics into a self-contained bundle. This may take up to 30-60 seconds.
+            </span>
+          </div>
+        </div>
+      )}
+
       {reportError && (
         <AlertBanner
           type="error"

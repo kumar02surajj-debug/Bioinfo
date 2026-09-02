@@ -40,6 +40,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.middleware("http")
+async def log_request_timing(request: Request, call_next):
+    import time
+    start_time = time.time()
+    response = await call_next(request)
+    duration_ms = round((time.time() - start_time) * 1000, 1)
+    path = request.url.path
+    if path != "/api/health" and not path.startswith("/docs") and not path.startswith("/redoc"):
+        logger.info(f"API {request.method} {path} -> {response.status_code} [{duration_ms}ms]")
+    return response
+
+
 # Include Routers
 app.include_router(upload_router)
 app.include_router(qc_router)

@@ -229,6 +229,19 @@ export const DifferentialPage: React.FC = () => {
         )}
       </div>
 
+      {/* Loading Progress Banner */}
+      {isLoading && (
+        <div className="p-4 rounded-xl bg-cyan-950/40 border border-cyan-500/30 text-cyan-200 backdrop-blur-md flex items-center gap-3 shadow-lg">
+          <div className="w-4 h-4 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin shrink-0" />
+          <div className="text-xs">
+            <span className="font-semibold text-cyan-300">Computing Differential Expression...</span>
+            <span className="opacity-80 block text-[11px] mt-0.5">
+              Analyzing {dataset.gene_count?.toLocaleString() || '22,000+'} genes across {dataset.sample_count || '18'} samples. Large datasets or free-tier cloud instances may take 10-30 seconds. Please do not refresh.
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Error alert */}
       {errorState['deg'] && (
         <div className="space-y-3">

@@ -167,6 +167,19 @@ export const SurvivalPage: React.FC = () => {
         )}
       </div>
 
+      {/* Loading Progress Banner */}
+      {isLoading && (
+        <div className="p-4 rounded-xl bg-cyan-950/40 border border-cyan-500/30 text-cyan-200 backdrop-blur-md flex items-center gap-3 shadow-lg">
+          <div className="w-4 h-4 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin shrink-0" />
+          <div className="text-xs">
+            <span className="font-semibold text-cyan-300">Computing Kaplan-Meier Survival Curve & Cox Hazard Ratio...</span>
+            <span className="opacity-80 block text-[11px] mt-0.5">
+              Evaluating prognostic sample stratification and survival curves for {selectedSurvivalGene}. Please wait.
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Error Alert */}
       {errorState['survival'] && (
         <div className="space-y-3">
