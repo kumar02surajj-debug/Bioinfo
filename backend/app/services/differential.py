@@ -31,7 +31,7 @@ from app.models.differential import (
     VolcanoPoint,
     RegulationStatus,
 )
-from app.services.data_processing import get_dataset, ValidationError
+from app.services.data_processing import get_dataset, save_dataset_session, ValidationError
 from app.services.qc import normalize_cpm_log2
 
 logger = logging.getLogger("transcriptox.services.differential")
@@ -406,5 +406,6 @@ def compute_differential_expression(
 
     data["deg_results_df"] = deg_df
     data["analysis_results"]["differential"] = response
+    save_dataset_session(dataset_id)
 
     return response

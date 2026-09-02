@@ -187,7 +187,26 @@ export const AnalysisProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [connectionAttempt, setConnectionAttempt] = useState<number>(1);
   const [connectionMessage, setConnectionMessage] = useState<string | null>('Connecting to backend...');
 
-  const [dataset, setDataset] = useState<UploadResponse | null>(null);
+  const [dataset, setDataset] = useState<UploadResponse | null>(() => {
+    try {
+      const saved = sessionStorage.getItem('transcriptox_dataset');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      if (dataset) {
+        sessionStorage.setItem('transcriptox_dataset', JSON.stringify(dataset));
+      } else {
+        sessionStorage.removeItem('transcriptox_dataset');
+      }
+    } catch {
+      // ignore
+    }
+  }, [dataset]);
   const [qcResults, setQcResults] = useState<QCResponse | null>(null);
   const [pcaResults, setPcaResults] = useState<PCAResponse | null>(null);
   const [degResults, setDegResults] = useState<DifferentialResponse | null>(null);

@@ -11,6 +11,7 @@ import {
   Search,
 } from 'lucide-react';
 import { AlertBanner } from '../components/common/AlertBanner';
+import { SessionRecoveryBanner } from '../components/common/SessionRecoveryBanner';
 import { StatCard } from '../components/common/StatCard';
 import { ClusterHeatmap } from '../charts/ClusterHeatmap';
 
@@ -144,12 +145,18 @@ export const ClusteringPage: React.FC = () => {
 
       {/* Error Banner */}
       {errorState['clustering'] && (
-        <AlertBanner
-          type="error"
-          title="Clustering Error"
-          message={errorState['clustering']}
-          onClose={() => setError('clustering', null)}
-        />
+        <div className="space-y-3">
+          <AlertBanner
+            type="error"
+            title="Clustering Error"
+            message={errorState['clustering']}
+            onClose={() => setError('clustering', null)}
+          />
+          <SessionRecoveryBanner
+            error={errorState['clustering']}
+            onClearError={() => setError('clustering', null)}
+          />
+        </div>
       )}
 
       {/* Parameter Controls */}

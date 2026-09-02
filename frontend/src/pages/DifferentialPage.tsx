@@ -14,6 +14,7 @@ import {
   Sliders,
 } from 'lucide-react';
 import { AlertBanner } from '../components/common/AlertBanner';
+import { SessionRecoveryBanner } from '../components/common/SessionRecoveryBanner';
 import { StatCard } from '../components/common/StatCard';
 import { VolcanoPlot } from '../charts/VolcanoPlot';
 import { MAPlot } from '../charts/MAPlot';
@@ -230,12 +231,18 @@ export const DifferentialPage: React.FC = () => {
 
       {/* Error alert */}
       {errorState['deg'] && (
-        <AlertBanner
-          type="error"
-          title="Differential Analysis Error"
-          message={errorState['deg']}
-          onClose={() => setError('deg', null)}
-        />
+        <div className="space-y-3">
+          <AlertBanner
+            type="error"
+            title="Differential Analysis Error"
+            message={errorState['deg']}
+            onClose={() => setError('deg', null)}
+          />
+          <SessionRecoveryBanner
+            error={errorState['deg']}
+            onClearError={() => setError('deg', null)}
+          />
+        </div>
       )}
 
       {/* Contrast & Threshold Controls Card */}

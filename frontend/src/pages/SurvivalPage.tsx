@@ -11,6 +11,7 @@ import {
   Clock,
 } from 'lucide-react';
 import { AlertBanner } from '../components/common/AlertBanner';
+import { SessionRecoveryBanner } from '../components/common/SessionRecoveryBanner';
 import { StatCard } from '../components/common/StatCard';
 import { SurvivalKMPlot } from '../charts/SurvivalKMPlot';
 
@@ -168,12 +169,18 @@ export const SurvivalPage: React.FC = () => {
 
       {/* Error Alert */}
       {errorState['survival'] && (
-        <AlertBanner
-          type="error"
-          title="Survival Analysis Error"
-          message={errorState['survival']}
-          onClose={() => setError('survival', null)}
-        />
+        <div className="space-y-3">
+          <AlertBanner
+            type="error"
+            title="Survival Analysis Error"
+            message={errorState['survival']}
+            onClose={() => setError('survival', null)}
+          />
+          <SessionRecoveryBanner
+            error={errorState['survival']}
+            onClearError={() => setError('survival', null)}
+          />
+        </div>
       )}
 
       {/* Controls Card */}

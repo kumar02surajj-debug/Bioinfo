@@ -17,7 +17,7 @@ from app.models.qc import (
     CorrelationMatrixData,
     TransformedMatrixPreview,
 )
-from app.services.data_processing import get_dataset
+from app.services.data_processing import get_dataset, save_dataset_session
 
 logger = logging.getLogger("transcriptox.services.qc")
 
@@ -61,6 +61,7 @@ def compute_qc(dataset_id: str, normalization: str = "log2_cpm") -> QCResponse:
     # 2. Normalization
     norm_df = normalize_cpm_log2(raw_df)
     data["normalized_counts"] = norm_df
+    save_dataset_session(dataset_id)
 
     # 3. Summary metrics
     total_genes = int(raw_df.shape[0])

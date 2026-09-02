@@ -10,6 +10,8 @@ import logging
 from typing import Dict, Any, Optional, Tuple, List
 import pandas as pd
 import numpy as np
+import tempfile
+import pickle
 from pathlib import Path
 
 from app.models.upload import UploadResponse
@@ -20,6 +22,52 @@ logger = logging.getLogger("transcriptox.data_processing")
 # In-memory storage for analysis sessions
 _DATASETS_STORE: Dict[str, Dict[str, Any]] = {}
 
+# Disk storage directories for resilient dataset session persistence across server restarts
+SESSION_CACHE_DIRS = [
+    Path(".dataset_sessions"),
+    Path(tempfile.gettempdir()) / "transcriptox_sessions"
+]
+
+for d in SESSION_CACHE_DIRS:
+    try:
+        d.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        pass
+
+
+def _save_dataset_to_disk(dataset_id: str, data_entry: Dict[str, Any]) -> None:
+    """Persist dataset session object to disk cache so server restarts don't lose user datasets."""
+    for cache_dir in SESSION_CACHE_DIRS:
+        try:
+            cache_dir.mkdir(parents=True, exist_ok=True)
+            file_path = cache_dir / f"{dataset_id}.pkl"
+            with open(file_path, "wb") as f:
+                pickle.dump(data_entry, f)
+            logger.info(f"Persisted dataset session '{dataset_id}' to {file_path}")
+        except Exception as e:
+            logger.warning(f"Could not persist dataset session '{dataset_id}' to {cache_dir}: {e}")
+
+
+def _load_dataset_from_disk(dataset_id: str) -> Optional[Dict[str, Any]]:
+    """Attempt to restore a dataset session from disk cache."""
+    for cache_dir in SESSION_CACHE_DIRS:
+        try:
+            file_path = cache_dir / f"{dataset_id}.pkl"
+            if file_path.exists():
+                with open(file_path, "rb") as f:
+                    data_entry = pickle.load(f)
+                logger.info(f"Successfully restored dataset session '{dataset_id}' from {file_path}")
+                return data_entry
+        except Exception as e:
+            logger.warning(f"Could not restore dataset session '{dataset_id}' from {cache_dir}: {e}")
+    return None
+
+
+def save_dataset_session(dataset_id: str) -> None:
+    """Public helper to save dataset session to disk after updates."""
+    if dataset_id in _DATASETS_STORE:
+        _save_dataset_to_disk(dataset_id, _DATASETS_STORE[dataset_id])
+
 
 class ValidationError(Exception):
     """Custom friendly validation error."""
@@ -27,12 +75,32 @@ class ValidationError(Exception):
 
 
 def get_dataset(dataset_id: str, require_metadata: bool = True) -> Dict[str, Any]:
-    """Retrieve cached dataset by ID."""
+    """Retrieve cached dataset by ID, automatically recovering from disk if memory was cleared."""
     if dataset_id not in _DATASETS_STORE:
-        raise ValidationError(f"Dataset session '{dataset_id}' not found. Please upload or reload your dataset.")
+        restored = _load_dataset_from_disk(dataset_id)
+        if restored is not None:
+            _DATASETS_STORE[dataset_id] = restored
+
+    if dataset_id not in _DATASETS_STORE:
+        # Check if demo dataset can be auto-rehydrated
+        if dataset_id.startswith("demo") or dataset_id == "demo":
+            logger.info(f"Re-hydrating demo dataset session '{dataset_id}' after server restart.")
+            ds_id, _ = get_or_load_demo_dataset()
+            if ds_id in _DATASETS_STORE:
+                _DATASETS_STORE[dataset_id] = _DATASETS_STORE[ds_id]
+                _DATASETS_STORE[dataset_id]["dataset_id"] = dataset_id
+                _save_dataset_to_disk(dataset_id, _DATASETS_STORE[dataset_id])
+
+    if dataset_id not in _DATASETS_STORE:
+        raise ValidationError(
+            f"Dataset session '{dataset_id}' not found. Please upload or reload your dataset on Step 1 (Upload)."
+        )
+
     data = _DATASETS_STORE[dataset_id]
     if require_metadata and data.get("metadata") is None:
-        raise ValidationError("Sample condition groups have not been confirmed. Please confirm or assign sample condition groups on the Upload page before running analysis.")
+        raise ValidationError(
+            "Sample condition groups have not been confirmed. Please confirm or assign sample condition groups on the Upload page before running analysis."
+        )
     return data
 
 
@@ -44,7 +112,7 @@ def store_dataset(
     dataset_name: str = "Uploaded Dataset",
     is_demo: bool = False
 ) -> Dict[str, Any]:
-    """Store dataset in session cache."""
+    """Store dataset in session cache and persist to disk."""
     data_entry = {
         "dataset_id": dataset_id,
         "dataset_name": dataset_name,
@@ -56,6 +124,7 @@ def store_dataset(
         "analysis_results": {}
     }
     _DATASETS_STORE[dataset_id] = data_entry
+    _save_dataset_to_disk(dataset_id, data_entry)
     return data_entry
 
 
@@ -497,6 +566,7 @@ def confirm_dataset_metadata(
     data["normalized_counts"] = None
     data["analysis_results"] = {}
     data["_deg_stats_cache"] = None  # Invalidate cached t-test results for new group assignments
+    _save_dataset_to_disk(dataset_id, data)
 
 
     metadata_preview = meta_df.head(10).to_dict(orient="records")

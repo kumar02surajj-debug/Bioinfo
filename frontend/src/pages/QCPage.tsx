@@ -13,6 +13,7 @@ import {
   Table as TableIcon,
 } from 'lucide-react';
 import { AlertBanner } from '../components/common/AlertBanner';
+import { SessionRecoveryBanner } from '../components/common/SessionRecoveryBanner';
 import { StatCard } from '../components/common/StatCard';
 import { LibrarySizeChart } from '../charts/LibrarySizeChart';
 import { ExpressionDistributionChart } from '../charts/ExpressionDistributionChart';
@@ -127,12 +128,18 @@ export const QCPage: React.FC = () => {
 
       {/* Errors / Loading Alerts */}
       {errorState['qc'] && (
-        <AlertBanner
-          type="error"
-          title="QC Calculation Error"
-          message={errorState['qc']}
-          onClose={() => setError('qc', null)}
-        />
+        <div className="space-y-3">
+          <AlertBanner
+            type="error"
+            title="QC Calculation Error"
+            message={errorState['qc']}
+            onClose={() => setError('qc', null)}
+          />
+          <SessionRecoveryBanner
+            error={errorState['qc']}
+            onClearError={() => setError('qc', null)}
+          />
+        </div>
       )}
 
       {/* Summary Stat Cards */}

@@ -13,6 +13,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { AlertBanner } from '../components/common/AlertBanner';
+import { SessionRecoveryBanner } from '../components/common/SessionRecoveryBanner';
 import { StatCard } from '../components/common/StatCard';
 import { EnrichmentDotPlot } from '../charts/EnrichmentDotPlot';
 import { EnrichmentBarChart } from '../charts/EnrichmentBarChart';
@@ -207,12 +208,18 @@ export const EnrichmentPage: React.FC = () => {
 
       {/* Error Banner */}
       {errorState['enrichment'] && (
-        <AlertBanner
-          type="error"
-          title="Pathway Enrichment Service Notice"
-          message={errorState['enrichment']}
-          onClose={() => setError('enrichment', null)}
-        />
+        <div className="space-y-3">
+          <AlertBanner
+            type="error"
+            title="Enrichment Error"
+            message={errorState['enrichment']}
+            onClose={() => setError('enrichment', null)}
+          />
+          <SessionRecoveryBanner
+            error={errorState['enrichment']}
+            onClearError={() => setError('enrichment', null)}
+          />
+        </div>
       )}
 
       {enrichmentResults?.service_message && enrichmentResults.service_status === 'partial' && (
