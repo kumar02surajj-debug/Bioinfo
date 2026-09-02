@@ -13,6 +13,10 @@ class SurvivalMetadataItem(BaseModel):
     time: float = Field(..., description="Follow-up or event time")
     event: int = Field(..., description="0 = censored, 1 = event")
 
+class ConfirmMetadataRequest(BaseModel):
+    dataset_id: str
+    sample_conditions: Dict[str, str] = Field(..., description="Mapping of sample_id to condition name")
+
 class UploadResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
@@ -28,3 +32,7 @@ class UploadResponse(BaseModel):
     genes_preview: List[str]
     metadata_preview: List[Dict[str, Any]]
     survival_preview: Optional[List[Dict[str, Any]]] = None
+    requires_group_confirmation: bool = False
+    suggested_groups: Optional[Dict[str, str]] = None
+    group_pattern_detected: bool = False
+

@@ -59,12 +59,14 @@ export async function checkHealth(): Promise<HealthResponse> {
 
 export async function uploadDataset(
   expressionFile: File,
-  metadataFile: File,
+  metadataFile?: File | null,
   survivalFile?: File | null
 ): Promise<UploadResponse> {
   const formData = new FormData();
   formData.append('expression_file', expressionFile);
-  formData.append('metadata_file', metadataFile);
+  if (metadataFile) {
+    formData.append('metadata_file', metadataFile);
+  }
   if (survivalFile) {
     formData.append('survival_file', survivalFile);
   }
@@ -75,6 +77,25 @@ export async function uploadDataset(
   });
   return handleResponse<UploadResponse>(response);
 }
+
+export async function confirmMetadata(
+  datasetId: string,
+  sampleConditions: Record<string, string>
+): Promise<UploadResponse> {
+  const response = await fetch(`${BASE_URL}/api/upload/confirm-metadata`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    },
+    body: JSON.stringify({
+      dataset_id: datasetId,
+      sample_conditions: sampleConditions,
+    }),
+  });
+  return handleResponse<UploadResponse>(response);
+}
+
 
 export async function loadDemoDataset(): Promise<UploadResponse> {
   const response = await fetch(`${BASE_URL}/api/upload/demo`, {

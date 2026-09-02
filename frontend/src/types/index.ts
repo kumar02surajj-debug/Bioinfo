@@ -29,6 +29,11 @@ export interface SurvivalMeta {
   event: number; // 0 = censored, 1 = event
 }
 
+export interface ConfirmMetadataRequest {
+  dataset_id: string;
+  sample_conditions: Record<string, string>;
+}
+
 export interface UploadResponse {
   dataset_id: string;
   dataset_name: string;
@@ -42,7 +47,11 @@ export interface UploadResponse {
   genes_preview: string[];
   metadata_preview: SampleMeta[];
   survival_preview?: SurvivalMeta[];
+  requires_group_confirmation?: boolean;
+  suggested_groups?: Record<string, string>;
+  group_pattern_detected?: boolean;
 }
+
 
 export interface LibrarySizeItem {
   sample_id: string;

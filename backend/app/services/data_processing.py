@@ -26,17 +26,20 @@ class ValidationError(Exception):
     pass
 
 
-def get_dataset(dataset_id: str) -> Dict[str, Any]:
+def get_dataset(dataset_id: str, require_metadata: bool = True) -> Dict[str, Any]:
     """Retrieve cached dataset by ID."""
     if dataset_id not in _DATASETS_STORE:
         raise ValidationError(f"Dataset session '{dataset_id}' not found. Please upload or reload your dataset.")
-    return _DATASETS_STORE[dataset_id]
+    data = _DATASETS_STORE[dataset_id]
+    if require_metadata and data.get("metadata") is None:
+        raise ValidationError("Sample condition groups have not been confirmed. Please confirm or assign sample condition groups on the Upload page before running analysis.")
+    return data
 
 
 def store_dataset(
     dataset_id: str,
     raw_counts: pd.DataFrame,
-    metadata: pd.DataFrame,
+    metadata: Optional[pd.DataFrame] = None,
     survival: Optional[pd.DataFrame] = None,
     dataset_name: str = "Uploaded Dataset",
     is_demo: bool = False
@@ -54,6 +57,7 @@ def store_dataset(
     }
     _DATASETS_STORE[dataset_id] = data_entry
     return data_entry
+
 
 
 def _detect_delimiter(sample_lines: List[str]) -> str:
@@ -181,14 +185,62 @@ def _parse_delimited_table(content: bytes, table_name: str = "Metadata") -> pd.D
     return table_df
 
 
+def detect_sample_groups(samples: List[str]) -> Tuple[bool, Dict[str, str]]:
+    """
+    Infers potential sample groups from sample names using general pattern detection heuristics.
+    Returns (pattern_detected, mapping_dict).
+    If no reliable pattern is found (e.g. all unique, or only 1 group), returns (False, {}).
+    """
+    import re
+    if not samples or len(samples) < 2:
+        return False, {}
+
+    # Candidate regex transformations to extract condition/group prefix or pattern
+    patterns = [
+        r'[-_. ]+(?:rep|sample|replicate|batch|run|r|s)?[-_. ]*\d+$',
+        r'[-_. ]+(?:rep|sample|replicate|batch|run|r|s)[-_. ]*$',
+        r'[-_. ]+[A-Za-z]?\d+[A-Za-z]?$',
+        r'(?<=[a-zA-Z])\d+$',  # Control1, WT2
+        r'[-_. ]+(?:rep|sample|replicate)?[-_. ]*[A-Za-z]$', # Control_A, Treat_B
+    ]
+
+    best_mapping: Dict[str, str] = {}
+    best_unique_count = 0
+
+    for pat in patterns:
+        mapping = {}
+        for s in samples:
+            cleaned = re.sub(pat, '', s, flags=re.IGNORECASE).strip(' -_./')
+            if cleaned:
+                mapping[s] = cleaned
+            else:
+                mapping[s] = s
+
+        unique_groups = set(mapping.values())
+        unique_count = len(unique_groups)
+
+        # We want >= 2 distinct groups and < len(samples) (meaning at least some samples share a group)
+        if 1 < unique_count < len(samples):
+            if len(mapping) == len(samples):
+                if not best_mapping or (unique_count < best_unique_count and unique_count >= 2):
+                    best_mapping = mapping
+                    best_unique_count = unique_count
+
+    if best_mapping and 1 < len(set(best_mapping.values())) < len(samples):
+        return True, best_mapping
+
+    return False, {}
+
+
 def validate_and_parse_csvs(
     expression_content: bytes,
-    metadata_content: bytes,
+    metadata_content: Optional[bytes] = None,
     survival_content: Optional[bytes] = None,
     dataset_name: str = "Uploaded Dataset"
 ) -> Tuple[str, UploadResponse]:
     """
     Validate and parse uploaded CSV or TXT files with friendly, actionable error messages.
+    Supports single-file upload (expression only) with automatic group detection.
     """
     # 1. Parse Expression Matrix (CSV or TXT)
     expr_df = _parse_delimited_expression(expression_content)
@@ -232,61 +284,81 @@ def validate_and_parse_csvs(
 
     # Clean index strings
     expr_df.index = [str(g).strip() for g in expr_df.index]
-
-    # 2. Parse Metadata (CSV or TXT)
-    meta_df = _parse_delimited_table(metadata_content, table_name="Metadata")
-
-    # Check columns
-    meta_df.columns = [str(c).strip().lower() for c in meta_df.columns]
-    
-    # Locate sample_id and condition columns
-    sample_col = None
-    for cand in ["sample_id", "sampleid", "sample", "id"]:
-        if cand in meta_df.columns:
-            sample_col = cand
-            break
-    if not sample_col:
-        sample_col = meta_df.columns[0] # Default to first column
-
-    cond_col = None
-    for cand in ["condition", "group", "treatment", "phenotype", "status", "class"]:
-        if cand in meta_df.columns:
-            cond_col = cand
-            break
-    if not cond_col and len(meta_df.columns) >= 2:
-        cond_col = meta_df.columns[1] # Default to second column
-
-    if not cond_col:
-        raise ValidationError("Metadata file must have a 'condition' (or 'group') column defining sample classes.")
-
-    meta_df["sample_id"] = meta_df[sample_col].astype(str).str.strip()
-    meta_df["condition"] = meta_df[cond_col].astype(str).str.strip()
-
-    # Check sample matches
-    meta_samples = set(meta_df["sample_id"])
     expr_samples = set(expr_df.columns)
 
-    if meta_df["sample_id"].duplicated().any():
-        raise ValidationError("Metadata file contains duplicate sample IDs.")
+    # 2. Parse Metadata (CSV or TXT) if provided
+    meta_df = None
+    conditions = []
+    condition_counts = {}
+    metadata_preview = []
+    requires_confirmation = False
+    suggested_groups = None
+    pattern_detected = False
 
-    if meta_samples != expr_samples:
-        missing_in_meta = list(expr_samples - meta_samples)[:4]
-        missing_in_expr = list(meta_samples - expr_samples)[:4]
-        msg = "Sample IDs in metadata do not match the expression matrix."
-        if missing_in_meta:
-            msg += f" Samples in expression matrix missing in metadata: {', '.join(missing_in_meta)}."
-        if missing_in_expr:
-            msg += f" Samples in metadata missing in expression matrix: {', '.join(missing_in_expr)}."
-        raise ValidationError(msg)
+    if metadata_content and len(metadata_content.strip()) > 0:
+        meta_df = _parse_delimited_table(metadata_content, table_name="Metadata")
+        meta_df.columns = [str(c).strip().lower() for c in meta_df.columns]
+        
+        # Locate sample_id and condition columns
+        sample_col = None
+        for cand in ["sample_id", "sampleid", "sample", "id"]:
+            if cand in meta_df.columns:
+                sample_col = cand
+                break
+        if not sample_col:
+            sample_col = meta_df.columns[0] # Default to first column
 
-    # Align metadata order to match expression columns exactly
-    meta_df = meta_df.set_index("sample_id").loc[list(expr_df.columns)].reset_index()
+        cond_col = None
+        for cand in ["condition", "group", "treatment", "phenotype", "status", "class"]:
+            if cand in meta_df.columns:
+                cond_col = cand
+                break
+        if not cond_col and len(meta_df.columns) >= 2:
+            cond_col = meta_df.columns[1] # Default to second column
 
-    conditions = sorted(meta_df["condition"].unique().tolist())
-    if len(conditions) < 2:
-        raise ValidationError(f"Metadata has only 1 condition group ('{conditions[0]}'). Differential expression requires at least 2 distinct condition groups.")
+        if not cond_col:
+            raise ValidationError("Metadata file must have a 'condition' (or 'group') column defining sample classes.")
 
-    condition_counts = meta_df["condition"].value_counts().to_dict()
+        meta_df["sample_id"] = meta_df[sample_col].astype(str).str.strip()
+        meta_df["condition"] = meta_df[cond_col].astype(str).str.strip()
+
+        # Check sample matches
+        meta_samples = set(meta_df["sample_id"])
+
+        if meta_df["sample_id"].duplicated().any():
+            raise ValidationError("Metadata file contains duplicate sample IDs.")
+
+        if meta_samples != expr_samples:
+            missing_in_meta = list(expr_samples - meta_samples)[:4]
+            missing_in_expr = list(meta_samples - expr_samples)[:4]
+            msg = "Sample IDs in metadata do not match the expression matrix."
+            if missing_in_meta:
+                msg += f" Samples in expression matrix missing in metadata: {', '.join(missing_in_meta)}."
+            if missing_in_expr:
+                msg += f" Samples in metadata missing in expression matrix: {', '.join(missing_in_expr)}."
+            raise ValidationError(msg)
+
+        # Align metadata order to match expression columns exactly
+        meta_df = meta_df.set_index("sample_id").loc[list(expr_df.columns)].reset_index()
+
+        conditions = sorted(meta_df["condition"].unique().tolist())
+        if len(conditions) < 2:
+            raise ValidationError(f"Metadata has only 1 condition group ('{conditions[0]}'). Differential expression requires at least 2 distinct condition groups.")
+
+        condition_counts = meta_df["condition"].value_counts().to_dict()
+        metadata_preview = meta_df.head(10).to_dict(orient="records")
+        requires_confirmation = False
+    else:
+        # Single-file flow: Infer sample groups
+        pattern_detected, suggested_groups = detect_sample_groups(list(expr_df.columns))
+        requires_confirmation = True
+        if pattern_detected and suggested_groups:
+            conditions = sorted(list(set(suggested_groups.values())))
+            condition_counts = pd.Series(list(suggested_groups.values())).value_counts().to_dict()
+        else:
+            conditions = []
+            condition_counts = {}
+            suggested_groups = {}
 
     # 3. Parse Survival (CSV or TXT) (if provided)
     survival_df = None
@@ -358,7 +430,6 @@ def validate_and_parse_csvs(
     )
 
     # Compute preview response
-    metadata_preview = meta_df.head(10).to_dict(orient="records")
     survival_preview = survival_df.head(10).to_dict(orient="records") if survival_df is not None else None
 
     response = UploadResponse(
@@ -373,23 +444,100 @@ def validate_and_parse_csvs(
         is_demo=False,
         genes_preview=list(expr_df.index[:10]),
         metadata_preview=metadata_preview,
-        survival_preview=survival_preview
+        survival_preview=survival_preview,
+        requires_group_confirmation=requires_confirmation,
+        suggested_groups=suggested_groups if requires_confirmation else None,
+        group_pattern_detected=pattern_detected if requires_confirmation else False
     )
 
     return dataset_id, response
+
+
+def confirm_dataset_metadata(
+    dataset_id: str,
+    sample_conditions: Dict[str, str]
+) -> Tuple[str, UploadResponse]:
+    """
+    Generates internal metadata from confirmed or manually assigned sample condition mappings.
+    Validates that all samples are assigned to at least 2 distinct condition groups.
+    """
+    data = get_dataset(dataset_id, require_metadata=False)
+    raw_df: pd.DataFrame = data["raw_counts"]
+    surv_df: Optional[pd.DataFrame] = data.get("survival")
+
+    expr_samples = list(raw_df.columns)
+
+    if not sample_conditions:
+        raise ValidationError("Please assign condition groups to all samples.")
+
+    # Check that all expression samples are in sample_conditions
+    missing = [s for s in expr_samples if s not in sample_conditions or not str(sample_conditions[s]).strip()]
+    if missing:
+        raise ValidationError(f"Missing condition assignment for samples: {', '.join(missing[:4])}. Every sample must be assigned to a condition group.")
+
+    # Clean and build metadata DataFrame
+    cleaned_conditions = {s: str(sample_conditions[s]).strip() for s in expr_samples}
+
+    meta_df = pd.DataFrame({
+        "sample_id": expr_samples,
+        "condition": [cleaned_conditions[s] for s in expr_samples]
+    })
+
+    conditions = sorted(meta_df["condition"].unique().tolist())
+    if len(conditions) < 2:
+        raise ValidationError(
+            f"Only 1 distinct condition group ('{conditions[0]}') was provided. "
+            "Differential expression and comparative analysis require at least 2 distinct condition groups (e.g. Control vs Treatment)."
+        )
+
+    condition_counts = meta_df["condition"].value_counts().to_dict()
+
+    # Store confirmed metadata in dataset session
+    data["metadata"] = meta_df
+    data["normalized_counts"] = None
+    data["analysis_results"] = {}
+
+    metadata_preview = meta_df.head(10).to_dict(orient="records")
+    survival_preview = surv_df.head(10).to_dict(orient="records") if surv_df is not None else None
+
+    response = UploadResponse(
+        dataset_id=dataset_id,
+        dataset_name=data["dataset_name"],
+        gene_count=int(raw_df.shape[0]),
+        sample_count=int(raw_df.shape[1]),
+        samples=expr_samples,
+        conditions=conditions,
+        condition_counts=condition_counts,
+        has_survival=(surv_df is not None and len(surv_df) > 0),
+        is_demo=data.get("is_demo", False),
+        genes_preview=list(raw_df.index[:10]),
+        metadata_preview=metadata_preview,
+        survival_preview=survival_preview,
+        requires_group_confirmation=False,
+        suggested_groups=None,
+        group_pattern_detected=False
+    )
+
+    return dataset_id, response
+
 
 
 def get_or_load_demo_dataset() -> Tuple[str, UploadResponse]:
     """
     Loads or generates the standard synthetic demo dataset.
     """
-    demo_dir = Path("TranscriptoX/data/example")
+    demo_dir = Path("data/example")
+    if not (demo_dir / "expression.csv").exists():
+        if Path("TranscriptoX/data/example/expression.csv").exists():
+            demo_dir = Path("TranscriptoX/data/example")
+
     expr_path = demo_dir / "expression.csv"
     meta_path = demo_dir / "metadata.csv"
     surv_path = demo_dir / "survival.csv"
 
     if not (expr_path.exists() and meta_path.exists() and surv_path.exists()):
         generate_demo_files(demo_dir)
+
 
     with open(expr_path, "rb") as f:
         expr_bytes = f.read()
