@@ -332,7 +332,7 @@ export const DifferentialPage: React.FC = () => {
 
       {/* Summary Stat Cards */}
       {degResults && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             title="Tested Genes"
             value={degResults.total_tested_genes.toLocaleString()}
@@ -398,13 +398,13 @@ export const DifferentialPage: React.FC = () => {
           <div className="min-h-[440px]">
             {plotType === 'volcano' ? (
               <VolcanoPlot
-                data={degResults.results}
+                data={degResults.volcano_data}
                 log2fcCutoff={degResults.log2fc_threshold}
                 fdrCutoff={degResults.fdr_threshold}
               />
             ) : (
               <MAPlot
-                data={degResults.results}
+                data={degResults.volcano_data}
                 log2fcCutoff={degResults.log2fc_threshold}
               />
             )}
@@ -419,10 +419,11 @@ export const DifferentialPage: React.FC = () => {
             <div>
               <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-cyan-400" />
-                Differentially Expressed Genes Master Table
+                Significant DEGs Table
               </h3>
               <p className="text-xs text-slate-400 mt-0.5">
-                Sorted by FDR adjusted p-value ascending. Use search or filter by regulation state.
+                Showing {degResults.up_regulated_count + degResults.down_regulated_count} significant genes
+                out of {degResults.total_tested_genes} tested. Sorted by FDR adjusted p-value ascending.
               </p>
             </div>
           </div>
@@ -442,10 +443,9 @@ export const DifferentialPage: React.FC = () => {
                   onChange={(e) => setStatusFilter(e.target.value as any)}
                   className="px-2 py-1 text-xs rounded-lg bg-slate-950 border border-slate-700 text-slate-300 focus:outline-none"
                 >
-                  <option value="ALL">All Genes ({degResults.results.length})</option>
-                  <option value="UP">Up-regulated ({degResults.up_regulated_count})</option>
-                  <option value="DOWN">Down-regulated ({degResults.down_regulated_count})</option>
-                  <option value="NOT_SIG">Not Significant ({degResults.not_sig_count})</option>
+                   <option value="ALL">All Significant ({degResults.up_regulated_count + degResults.down_regulated_count})</option>
+                   <option value="UP">Up-regulated ({degResults.up_regulated_count})</option>
+                   <option value="DOWN">Down-regulated ({degResults.down_regulated_count})</option>
                 </select>
               </div>
             }

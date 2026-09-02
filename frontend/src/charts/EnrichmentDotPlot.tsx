@@ -16,13 +16,13 @@ export const EnrichmentDotPlot: React.FC<EnrichmentDotPlotProps> = ({
   // Truncate long term names for clean display
   const cleanTerms = topItems.map((d) => {
     const t = d.term.split(' (GO:')[0];
-    return t.length > 45 ? `${t.slice(0, 42)}...` : t;
+    return t.length > 35 ? `${t.slice(0, 32)}...` : t;
   });
 
   const negLogFdr = topItems.map((d) => -Math.log10(Math.max(1e-50, d.adj_p_value)));
   const counts = topItems.map((d) => d.gene_count);
   const maxCount = Math.max(...counts, 1);
-  const sizes = counts.map((c) => Math.max(10, Math.min(28, (c / maxCount) * 24 + 8)));
+  const sizes = counts.map((c) => Math.max(8, Math.min(24, (c / maxCount) * 20 + 6)));
 
   const trace = {
     x: topItems.map((d) => d.gene_ratio),
@@ -40,8 +40,8 @@ export const EnrichmentDotPlot: React.FC<EnrichmentDotPlotProps> = ({
       ],
       colorbar: {
         title: '-log10(FDR)',
-        tickfont: { color: '#94a3b8', size: 10, family: 'JetBrains Mono, monospace' },
-        titlefont: { color: '#cbd5e1', size: 11, family: 'Inter, sans-serif' },
+        tickfont: { color: '#94a3b8', size: 9, family: 'JetBrains Mono, monospace' },
+        titlefont: { color: '#cbd5e1', size: 10, family: 'Inter, sans-serif' },
       },
       line: { color: '#ffffff', width: 1 },
       opacity: 0.9,
@@ -63,19 +63,20 @@ export const EnrichmentDotPlot: React.FC<EnrichmentDotPlotProps> = ({
   const layout = {
     title: {
       text: `Pathway Enrichment Dot Plot (Top ${topItems.length} Terms)`,
-      font: { color: '#f1f5f9', size: 14, family: 'Inter, sans-serif' },
+      font: { color: '#f1f5f9', size: 13, family: 'Inter, sans-serif' },
     },
     xaxis: {
-      title: 'Gene Ratio (Overlapping Genes / Input Genes)',
+      title: 'Gene Ratio (Overlap / Input)',
       tickformat: '.1%',
       zeroline: true,
       zerolinecolor: 'rgba(100, 116, 139, 0.4)',
+      automargin: true,
     },
     yaxis: {
       automargin: true,
-      tickfont: { size: 11, color: '#cbd5e1', family: 'Inter, sans-serif' },
+      tickfont: { size: 10, color: '#cbd5e1', family: 'Inter, sans-serif' },
     },
-    margin: { l: 240, r: 40, t: 45, b: 60 },
+    margin: { l: 140, r: 35, t: 45, b: 55 },
   };
 
   return (
@@ -84,7 +85,7 @@ export const EnrichmentDotPlot: React.FC<EnrichmentDotPlotProps> = ({
       layout={layout}
       title={`Enrichment Dot Plot (Top ${topItems.length} Terms)`}
       filename="transcriptox_enrichment_dotplot"
-      style={{ minHeight: '480px' }}
+      style={{ minHeight: '440px' }}
     />
   );
 };

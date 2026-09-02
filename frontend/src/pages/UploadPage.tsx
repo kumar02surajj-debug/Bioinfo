@@ -267,7 +267,7 @@ export const UploadPage: React.FC = () => {
         <AlertBanner
           type="warning"
           title="Backend Service Unreachable"
-          message="FastAPI backend is currently offline. Please ensure the backend server is running on http://localhost:8000."
+          message={`The backend service is not responding. It may be starting up (cold start on free tier) — please wait a moment and retry. Attempting to connect to: ${api.BASE_URL}`}
         />
       )}
 
@@ -778,7 +778,7 @@ export const UploadPage: React.FC = () => {
           </div>
 
           {/* Metric Summary Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard
               title="Total Genes"
               value={dataset.gene_count.toLocaleString()}

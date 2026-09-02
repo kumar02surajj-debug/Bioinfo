@@ -496,6 +496,8 @@ def confirm_dataset_metadata(
     data["metadata"] = meta_df
     data["normalized_counts"] = None
     data["analysis_results"] = {}
+    data["_deg_stats_cache"] = None  # Invalidate cached t-test results for new group assignments
+
 
     metadata_preview = meta_df.head(10).to_dict(orient="records")
     survival_preview = surv_df.head(10).to_dict(orient="records") if surv_df is not None else None

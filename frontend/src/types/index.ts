@@ -142,6 +142,19 @@ export interface DEGItem {
   base_mean: number;
 }
 
+/**
+ * Compact per-gene summary returned for ALL tested genes.
+ * Used exclusively by VolcanoPlot and MAPlot for rendering the full gene cloud.
+ * Kept lightweight (5 fields) to avoid serialising 22 k full DEGItem objects.
+ */
+export interface VolcanoPoint {
+  gene_id: string;
+  log2fc: number;
+  adj_p_value: number;
+  base_mean: number;
+  status: RegulationStatus;
+}
+
 export interface DifferentialResponse {
   dataset_id: string;
   control_group: string;
@@ -152,7 +165,10 @@ export interface DifferentialResponse {
   up_regulated_count: number;
   down_regulated_count: number;
   not_sig_count: number;
+  /** Significant (UP/DOWN) genes only — used for the DEG table and top-label overlays. */
   results: DEGItem[];
+  /** All tested genes in compact form — used by VolcanoPlot and MAPlot. */
+  volcano_data: VolcanoPoint[];
   methodology_note: string;
 }
 

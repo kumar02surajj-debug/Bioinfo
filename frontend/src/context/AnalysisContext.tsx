@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import type {
   AnalysisStep,
@@ -12,6 +12,8 @@ import type {
   SurvivalResponse,
 } from '../types';
 import * as api from '../services/api';
+
+export type BackendConnectionStatus = 'connecting' | 'connected' | 'retrying' | 'offline';
 
 export interface SavedSession {
   version: string;
@@ -41,7 +43,10 @@ interface AnalysisContextType {
   backendHealth: HealthResponse | null;
   isBackendConnected: boolean;
   isCheckingHealth: boolean;
-  checkBackendConnection: () => Promise<void>;
+  connectionStatus: BackendConnectionStatus;
+  connectionAttempt: number;
+  connectionMessage: string | null;
+  checkBackendConnection: (isManualRetry?: boolean) => Promise<void>;
 
   // Datasets and results
   dataset: UploadResponse | null;
@@ -98,6 +103,9 @@ const VALID_STEPS: AnalysisStep[] = [
   'docs',
   'howtouse',
 ];
+
+const MAX_POLL_ATTEMPTS = 20; // 20 attempts * 3s = 60s max cold-start timeout
+const POLL_INTERVAL_MS = 3000; // 3 seconds between retries during startup
 
 export const AnalysisProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const getInitialStep = (): AnalysisStep => {
@@ -175,6 +183,9 @@ export const AnalysisProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [backendHealth, setBackendHealth] = useState<HealthResponse | null>(null);
   const [isBackendConnected, setIsBackendConnected] = useState<boolean>(false);
   const [isCheckingHealth, setIsCheckingHealth] = useState<boolean>(true);
+  const [connectionStatus, setConnectionStatus] = useState<BackendConnectionStatus>('connecting');
+  const [connectionAttempt, setConnectionAttempt] = useState<number>(1);
+  const [connectionMessage, setConnectionMessage] = useState<string | null>('Connecting to backend...');
 
   const [dataset, setDataset] = useState<UploadResponse | null>(null);
   const [qcResults, setQcResults] = useState<QCResponse | null>(null);
@@ -193,6 +204,9 @@ export const AnalysisProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [loadingState, setLoadingState] = useState<Record<string, boolean>>({});
   const [errorState, setErrorState] = useState<Record<string, string | null>>({});
 
+  const pollTimerRef = useRef<any>(null);
+  const isPollingRef = useRef<boolean>(false);
+
   const setLoading = (key: string, isLoading: boolean) => {
     setLoadingState((prev) => ({ ...prev, [key]: isLoading }));
   };
@@ -205,27 +219,81 @@ export const AnalysisProvider: React.FC<{ children: ReactNode }> = ({ children }
     setErrorState({});
   };
 
-  const checkBackendConnection = async () => {
+  /**
+   * Resilient backend connection check & fast polling loop.
+   */
+  const startPolling = useCallback(async (currentAttempt: number = 1) => {
+    if (pollTimerRef.current) {
+      clearTimeout(pollTimerRef.current);
+      pollTimerRef.current = null;
+    }
+
+    isPollingRef.current = true;
     setIsCheckingHealth(true);
+    setConnectionAttempt(currentAttempt);
+
+    if (currentAttempt === 1) {
+      setConnectionStatus('connecting');
+      setConnectionMessage('Connecting to backend...');
+    } else {
+      setConnectionStatus('retrying');
+      setConnectionMessage(
+        `Backend waking up (cold start) — retrying (Attempt ${currentAttempt}/${MAX_POLL_ATTEMPTS})...`
+      );
+    }
+
     try {
-      const health = await api.checkHealth();
-      setBackendHealth(health);
-      setIsBackendConnected(health.status === 'ok');
-      setError('backend', null);
+      // Use short 8s timeout per ping during polling loop
+      const health = await api.checkHealth(api.HEALTH_PING_TIMEOUT_MS);
+      if (health.status === 'ok') {
+        setBackendHealth(health);
+        setIsBackendConnected(true);
+        setConnectionStatus('connected');
+        setConnectionMessage('Backend Connected ✓');
+        setError('backend', null);
+        setIsCheckingHealth(false);
+        isPollingRef.current = false;
+        return;
+      }
+      throw new Error('Health check returned non-ok status');
     } catch (err: any) {
-      setIsBackendConnected(false);
-      setBackendHealth(null);
-      setError('backend', err.message || 'Backend unreachable');
-    } finally {
-      setIsCheckingHealth(false);
+      if (currentAttempt >= MAX_POLL_ATTEMPTS) {
+        // Exceeded 60s timeout window
+        setIsBackendConnected(false);
+        setBackendHealth(null);
+        setConnectionStatus('offline');
+        setConnectionMessage('Backend unavailable after 60s. Click Retry below when your server is running.');
+        setError(
+          'backend',
+          `Unable to connect to backend at ${api.BASE_URL}. If using a free cloud tier (e.g. Render/Railway), ensure the service is active.`
+        );
+        setIsCheckingHealth(false);
+        isPollingRef.current = false;
+      } else {
+        // Schedule next retry in 3 seconds
+        pollTimerRef.current = setTimeout(() => {
+          startPolling(currentAttempt + 1);
+        }, POLL_INTERVAL_MS);
+      }
+    }
+  }, []);
+
+  const checkBackendConnection = async (isManualRetry: boolean = false) => {
+    if (isManualRetry || connectionStatus === 'offline' || !isBackendConnected) {
+      setConnectionAttempt(1);
+      await startPolling(1);
     }
   };
 
+  // Initial connection polling on app mount
   useEffect(() => {
-    checkBackendConnection();
-    const interval = setInterval(checkBackendConnection, 15000);
-    return () => clearInterval(interval);
-  }, []);
+    startPolling(1);
+    return () => {
+      if (pollTimerRef.current) {
+        clearTimeout(pollTimerRef.current);
+      }
+    };
+  }, [startPolling]);
 
   // Update default contrast groups when dataset changes
   useEffect(() => {
@@ -330,6 +398,9 @@ export const AnalysisProvider: React.FC<{ children: ReactNode }> = ({ children }
         backendHealth,
         isBackendConnected,
         isCheckingHealth,
+        connectionStatus,
+        connectionAttempt,
+        connectionMessage,
         checkBackendConnection,
         dataset,
         setDataset,

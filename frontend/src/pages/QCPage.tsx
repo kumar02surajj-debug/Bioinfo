@@ -137,7 +137,7 @@ export const QCPage: React.FC = () => {
 
       {/* Summary Stat Cards */}
       {qcResults && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             title="Total Genes Evaluated"
             value={qcResults.summary.total_genes.toLocaleString()}
@@ -167,7 +167,7 @@ export const QCPage: React.FC = () => {
 
       {/* Main Tabs Navigation */}
       <div className="space-y-4">
-        <div className="flex border-b border-slate-800 space-x-2 overflow-x-auto">
+        <div className="flex border-b border-slate-800 space-x-2 overflow-x-auto scrollbar-none pb-0.5" style={{ WebkitOverflowScrolling: 'touch' }}>
           {[
             { id: 'pca', label: 'PCA Dimensionality Reduction', icon: GitCommit },
             { id: 'library', label: 'Library Size & Sequencing Depth', icon: BarChart3 },

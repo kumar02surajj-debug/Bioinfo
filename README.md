@@ -168,13 +168,27 @@ Sample_Trt_02,22.1,0
 
 ---
 
-## Statistical Methodology & Transparency
+## Cloud Hosting, Cold-Starts & Connection Resilience
 
-- **Normalization:** $\text{CPM}_{ij} = \frac{\text{Count}_{ij}}{\text{LibrarySize}_j} \times 10^6$, $\log_2(\text{CPM}_{ij} + 1.0)$.
-- **Differential Expression:** Two-sample Welch's $t$-test on log2(CPM+1) normalized counts with Benjamini-Hochberg FDR correction. *Note: This serves as an exploratory statistical approximation compared to negative binomial generalized linear models (e.g. DESeq2/edgeR).*
-- **Clustering:** Row-wise $Z$-score standardization ($Z = \frac{x - \mu}{\sigma}$) and hierarchical clustering via SciPy.
-- **Enrichment:** Fisher's Exact test against official Enrichr gene set libraries via GSEAPy.
-- **Survival:** Kaplan-Meier product-limit estimator, Log-rank test, and Cox Proportional Hazards regression via Lifelines.
+When TranscriptoX is deployed with a serverless or free-tier backend (e.g., Render Free Tier, Railway, Fly.io), the backend container may spin down to sleep during periods of inactivity.
+
+- **Automated Health Polling:** On initial application load, the frontend polls `GET /api/health` every 3 seconds for up to 60 seconds.
+- **Immediate State Feedback:** The UI displays real-time connection status indicators (`Connecting...`, `Waking up (Attempt X/20)...`, `Connected ✓`, or `Offline`).
+- **Session Caching:** Once verified, the connection state is cached in the active session, eliminating redundant polling on internal page transitions.
+- **Explicit Request Timeouts:** Standard analytical API requests use a 60-second timeout with `AbortController`; intensive multi-stage HTML report generation uses a 90-second timeout.
+- **Manual Retry Trigger:** Users can click the status indicator in the header at any time to re-verify connectivity.
+
+---
+
+## Mobile & Tablet Usability
+
+TranscriptoX is fully optimized for touch devices and narrow screen viewports (phones & tablets):
+
+- **Collapsible Navigation Drawer:** On viewports $< 768\text{px}$, the sidebar transforms into a slide-over mobile drawer with all analysis steps, completion checkmarks, active dataset indicator, and session management.
+- **Horizontal Stepper:** Touch-scrollable workflow stepper with automatic centering on the active step.
+- **Responsive Data Tables:** All data tables (Master DEG table, Metadata table, Sample matrices) feature smooth touch horizontal scrolling (`overflow-x: auto`) within their containers without breaking viewport layout.
+- **Touch-Friendly Charts:** Plotly visualizers (Volcano, PCA, Heatmap, Enrichment, Survival KM) feature responsive viewport margin scaling, non-intrusive page touch scrolling, and 300-DPI high-resolution PNG/vector SVG exports.
+- **44px+ Touch Targets:** All buttons, dropdowns, pagination controls, and file dropzones adhere to mobile accessibility guidelines.
 
 ---
 

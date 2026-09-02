@@ -52,22 +52,22 @@ export const StatCard: React.FC<StatCardProps> = ({
   }[color];
 
   return (
-    <div className={`p-5 rounded-2xl bg-gradient-to-b ${colorMap.bg} border backdrop-blur-md shadow-lg relative overflow-hidden transition-all duration-300 hover:scale-[1.01]`}>
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">{title}</p>
-          <h3 className="text-2xl font-bold text-slate-100 mt-1.5 tracking-tight">{value}</h3>
-          {subtitle && <p className="text-xs text-slate-400 mt-1">{subtitle}</p>}
+    <div className={`p-4 sm:p-5 rounded-2xl bg-gradient-to-b ${colorMap.bg} border backdrop-blur-md shadow-lg relative overflow-hidden transition-all duration-300 hover:scale-[1.01]`}>
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-400 truncate">{title}</p>
+          <h3 className="text-xl sm:text-2xl font-bold text-slate-100 mt-1 sm:mt-1.5 tracking-tight break-words">{value}</h3>
+          {subtitle && <p className="text-[11px] sm:text-xs text-slate-400 mt-1 leading-snug break-words">{subtitle}</p>}
         </div>
         {Icon && (
-          <div className={`p-2.5 rounded-xl border ${colorMap.iconBg} shadow-inner`}>
-            <Icon className="w-5 h-5" />
+          <div className={`p-2 sm:p-2.5 rounded-xl border ${colorMap.iconBg} shadow-inner shrink-0`}>
+            <Icon className="w-4 sm:w-5 h-4 sm:h-5" />
           </div>
         )}
       </div>
       {badge && (
-        <div className="mt-3">
-          <span className={`inline-block px-2 py-0.5 text-2xs font-medium rounded-md border ${colorMap.badgeBg}`}>
+        <div className="mt-2.5 sm:mt-3">
+          <span className={`inline-block px-2 py-0.5 text-[10px] font-semibold rounded-md border ${colorMap.badgeBg}`}>
             {badge}
           </span>
         </div>

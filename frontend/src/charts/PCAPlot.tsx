@@ -34,9 +34,9 @@ export const PCAPlot: React.FC<PCAPlotProps> = ({ data }) => {
       name: `${cond} (n=${subset.length})`,
       text: subset.map((s) => s.sample_id),
       textposition: 'top center',
-      textfont: { size: 10, color: '#cbd5e1', family: 'JetBrains Mono, monospace' },
+      textfont: { size: 9, color: '#cbd5e1', family: 'JetBrains Mono, monospace' },
       marker: {
-        size: 13,
+        size: 11,
         color: palette[idx % palette.length],
         line: { color: '#ffffff', width: 1.5 },
         opacity: 0.9,
@@ -60,9 +60,9 @@ export const PCAPlot: React.FC<PCAPlotProps> = ({ data }) => {
       name: `${cond} (n=${subset.length})`,
       text: subset.map((s) => s.sample_id),
       textposition: 'top center',
-      textfont: { size: 9, color: '#cbd5e1', family: 'JetBrains Mono, monospace' },
+      textfont: { size: 8, color: '#cbd5e1', family: 'JetBrains Mono, monospace' },
       marker: {
-        size: 7,
+        size: 6,
         color: palette[idx % palette.length],
         line: { color: '#ffffff', width: 1 },
         opacity: 0.9,
@@ -92,13 +92,13 @@ export const PCAPlot: React.FC<PCAPlotProps> = ({ data }) => {
       y: driverGenes.map((g) => (pc2Map.get(g) || 0) * scaleFactor),
       mode: 'markers+text',
       type: 'scatter',
-      name: 'Top Driver Gene Loadings',
+      name: 'Top Driver Loadings',
       text: driverGenes,
       textposition: 'bottom center',
-      textfont: { size: 10, color: '#facc15', family: 'JetBrains Mono, monospace' },
+      textfont: { size: 9, color: '#facc15', family: 'JetBrains Mono, monospace' },
       marker: {
         symbol: 'diamond',
-        size: 8,
+        size: 7,
         color: '#facc15',
         line: { color: '#ca8a04', width: 1 },
       },
@@ -113,26 +113,28 @@ export const PCAPlot: React.FC<PCAPlotProps> = ({ data }) => {
 
   const layout2D = {
     title: {
-      text: `Principal Component Analysis (PC1 vs PC2) — Log2-CPM Normalized`,
-      font: { color: '#f1f5f9', size: 14, family: 'Inter, sans-serif' },
+      text: `PCA (PC1 vs PC2) — Log2-CPM Normalized`,
+      font: { color: '#f1f5f9', size: 13, family: 'Inter, sans-serif' },
     },
     xaxis: {
-      title: `Principal Component 1 (${pc1Var}% Variance Explained)`,
+      title: `PC1 (${pc1Var}% Var)`,
       zeroline: true,
       zerolinecolor: 'rgba(100, 116, 139, 0.4)',
+      automargin: true,
     },
     yaxis: {
-      title: `Principal Component 2 (${pc2Var}% Variance Explained)`,
+      title: `PC2 (${pc2Var}% Var)`,
       zeroline: true,
       zerolinecolor: 'rgba(100, 116, 139, 0.4)',
+      automargin: true,
     },
     hovermode: 'closest',
   };
 
   const layout3D = {
     title: {
-      text: `3D PCA Space (PC1, PC2, PC3) — Log2-CPM Normalized`,
-      font: { color: '#f1f5f9', size: 14, family: 'Inter, sans-serif' },
+      text: `3D PCA Space — Log2-CPM Normalized`,
+      font: { color: '#f1f5f9', size: 13, family: 'Inter, sans-serif' },
     },
     scene: {
       xaxis: { title: `PC1 (${pc1Var}%)`, gridcolor: 'rgba(51, 65, 85, 0.5)' },
@@ -144,33 +146,33 @@ export const PCAPlot: React.FC<PCAPlotProps> = ({ data }) => {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between px-1">
-        <div className="flex items-center gap-3 text-xs text-slate-400">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 px-1">
+        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
           <span>
-            Total 2D Variance: <strong className="text-cyan-400">{(Number(pc1Var) + Number(pc2Var)).toFixed(1)}%</strong>
+            2D Variance: <strong className="text-cyan-400">{(Number(pc1Var) + Number(pc2Var)).toFixed(1)}%</strong>
           </span>
           {is3D && (
             <span>
-              Total 3D Variance: <strong className="text-purple-400">{(Number(pc1Var) + Number(pc2Var) + Number(pc3Var)).toFixed(1)}%</strong>
+              • 3D Variance: <strong className="text-purple-400">{(Number(pc1Var) + Number(pc2Var) + Number(pc3Var)).toFixed(1)}%</strong>
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5">
           {!is3D && data.top_loadings_pc1 && data.top_loadings_pc1.length > 0 && (
             <button
               onClick={() => setShowLoadings(!showLoadings)}
-              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors min-h-[34px] cursor-pointer"
             >
               <Sparkles className="w-3 h-3 text-amber-400" />
-              <span>{showLoadings ? 'Hide Driver Loadings' : 'Show Driver Loadings'}</span>
+              <span>{showLoadings ? 'Hide Drivers' : 'Show Drivers'}</span>
             </button>
           )}
           <button
             onClick={() => setIs3D(!is3D)}
-            className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors min-h-[34px] cursor-pointer"
           >
             {is3D ? <Layers className="w-3 h-3 text-cyan-400" /> : <Box className="w-3 h-3 text-purple-400" />}
-            <span>{is3D ? 'Switch to 2D Space' : 'Switch to 3D Space'}</span>
+            <span>{is3D ? '2D View' : '3D View'}</span>
           </button>
         </div>
       </div>

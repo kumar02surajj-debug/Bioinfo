@@ -1,7 +1,18 @@
 import React from 'react';
 
+export type StatusBadgeType =
+  | 'connected'
+  | 'disconnected'
+  | 'loading'
+  | 'connecting'
+  | 'retrying'
+  | 'offline'
+  | 'active'
+  | 'completed'
+  | 'pending';
+
 interface StatusBadgeProps {
-  status: 'connected' | 'disconnected' | 'loading' | 'active' | 'completed' | 'pending';
+  status: StatusBadgeType;
   text?: string;
   size?: 'sm' | 'md';
 }
@@ -14,19 +25,27 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, text, size = '
         return {
           bg: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400',
           dot: 'bg-emerald-400',
-          defaultText: status === 'connected' ? 'Backend Connected' : 'Completed',
+          defaultText: status === 'connected' ? 'Backend Connected ✓' : 'Completed',
         };
       case 'disconnected':
+      case 'offline':
         return {
           bg: 'bg-rose-500/10 border-rose-500/30 text-rose-400',
           dot: 'bg-rose-400',
-          defaultText: 'Disconnected',
+          defaultText: 'Backend Offline',
         };
+      case 'connecting':
       case 'loading':
         return {
-          bg: 'bg-amber-500/10 border-amber-500/30 text-amber-400',
+          bg: 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300',
+          dot: 'bg-cyan-400 animate-pulse',
+          defaultText: 'Connecting to backend...',
+        };
+      case 'retrying':
+        return {
+          bg: 'bg-amber-500/10 border-amber-500/30 text-amber-300',
           dot: 'bg-amber-400 animate-ping',
-          defaultText: 'Connecting...',
+          defaultText: 'Retrying connection...',
         };
       case 'active':
         return {
@@ -49,10 +68,10 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, text, size = '
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border ${config.bg} ${sizeClasses} shadow-sm backdrop-blur-xs`}
+      className={`inline-flex items-center gap-1.5 rounded-full border ${config.bg} ${sizeClasses} shadow-sm backdrop-blur-xs transition-colors`}
     >
-      <span className={`w-1.5 h-1.5 rounded-full ${config.dot}`} />
-      <span>{text || config.defaultText}</span>
+      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${config.dot}`} />
+      <span className="truncate">{text || config.defaultText}</span>
     </span>
   );
 };

@@ -147,9 +147,19 @@ Treatment_3,22.0,0`;
 
   const troubleshootingItems = [
     {
+      problem: 'Backend Connection Delay / "Backend Waking Up" Notice',
+      cause: 'If the backend is deployed on a free or serverless cloud tier (e.g. Render Free Tier, Railway, Fly.io), the server spins down to sleep during inactivity. The first health check can take 20 to 60+ seconds to spin up from idle ("cold start").',
+      solution: 'This is expected cloud infrastructure behavior. TranscriptoX automatically polls the backend every 3 seconds up to 60 seconds with live progress feedback. Once awake, the connection is cached for the rest of your session. You can also click the "Check Now" or "Retry Connection" button in the status pill at any time.',
+    },
+    {
+      problem: 'Mobile & Tablet Touch Gestures / Screen Navigation',
+      cause: 'Navigating complex bioinformatics dashboards and large interactive matrix heatmaps on smartphones or tablets.',
+      solution: 'On mobile screens (< 768px), use the top-left hamburger menu to open the full step drawer with progress checkmarks. All data tables support smooth horizontal finger swiping within their containers. Plotly charts are optimized for touch panning, and pinch-to-zoom is available through the chart modebar.',
+    },
+    {
       problem: 'Backend Disconnected / Offline Banner',
-      cause: 'The Python FastAPI backend service is not running on localhost:8000.',
-      solution: 'Open a terminal in the project directory and run: cd backend && source .venv/bin/activate && uvicorn app.main:app --reload --port 8000 (or on Windows: .venv\\Scripts\\activate ; uvicorn app.main:app --reload --port 8000). Once started, click the "Retry Connection" button in the header.',
+      cause: 'The Python FastAPI backend service is not running or unreachable at the configured API URL.',
+      solution: 'If running locally, open a terminal and run: cd backend && source .venv/bin/activate && uvicorn app.main:app --reload --port 8000 (Windows: .venv\\Scripts\\activate ; uvicorn app.main:app --reload --port 8000). Once started, click the "Retry Connection" button in the header.',
     },
     {
       problem: 'Sample IDs in metadata do not match expression matrix',

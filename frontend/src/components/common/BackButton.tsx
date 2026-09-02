@@ -36,7 +36,7 @@ export const BackButton: React.FC<BackButtonProps> = ({
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       aria-label="Go back"
-      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-800 bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-cyan-300 hover:border-cyan-500/30 text-xs font-semibold shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50 cursor-pointer ${className}`}
+      className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-800 bg-slate-900/90 hover:bg-slate-800 text-slate-200 hover:text-cyan-300 hover:border-cyan-500/40 text-xs font-semibold shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50 min-h-[42px] min-w-[42px] cursor-pointer shrink-0 ${className}`}
     >
       <ChevronLeft className="w-4 h-4 text-cyan-400 shrink-0" />
       <span>{label}</span>

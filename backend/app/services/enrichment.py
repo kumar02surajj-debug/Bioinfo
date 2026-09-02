@@ -75,15 +75,17 @@ def compute_enrichment(
         deg_df: pd.DataFrame = data["deg_results_df"]
 
         if regulation_filter == "UP":
-            subset = deg_df[deg_df["status"] == "UP"]
+            subset = deg_df[deg_df["status"] == "UP"].sort_values("adj_p_value")
         elif regulation_filter == "DOWN":
-            subset = deg_df[deg_df["status"] == "DOWN"]
+            subset = deg_df[deg_df["status"] == "DOWN"].sort_values("adj_p_value")
         else: # ALL
-            subset = deg_df[deg_df["status"].isin(["UP", "DOWN"])]
+            subset = deg_df[deg_df["status"].isin(["UP", "DOWN"])].sort_values("adj_p_value")
 
-        gene_list = [str(g).upper() for g in subset.index.tolist()]
-
-        if not gene_list:
+        if not subset.empty:
+            # Rank by significance and select up to top 500 driver genes for optimal Enrichr performance
+            top_subset = subset.head(500)
+            gene_list = [str(g).upper() for g in top_subset.index.tolist()]
+        else:
             # If no DEGs passed threshold, fallback to top 50 ranked genes
             gene_list = [str(g).upper() for g in deg_df.sort_values("adj_p_value").index[:50]]
     else:

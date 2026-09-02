@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import type { DEGItem } from '../types';
+import type { VolcanoPoint } from '../types';
 import { PlotWrapper } from './PlotWrapper';
 import { Eye, EyeOff } from 'lucide-react';
 
 interface VolcanoPlotProps {
-  data: DEGItem[];
+  data: VolcanoPoint[];
   log2fcCutoff: number;
   fdrCutoff: number;
 }
@@ -27,7 +27,7 @@ export const VolcanoPlot: React.FC<VolcanoPlotProps> = ({
   });
   const top10DEGs = significantDEGs.slice(0, 10);
 
-  const createTrace = (subset: DEGItem[], name: string, color: string) => {
+  const createTrace = (subset: VolcanoPoint[], name: string, color: string) => {
     return {
       x: subset.map((d) => d.log2fc),
       y: subset.map((d) => -Math.log10(Math.max(1e-300, d.adj_p_value))),
@@ -45,13 +45,11 @@ export const VolcanoPlot: React.FC<VolcanoPlotProps> = ({
         d.gene_id,
         d.log2fc.toFixed(3),
         d.adj_p_value < 0.0001 ? d.adj_p_value.toExponential(3) : d.adj_p_value.toFixed(4),
-        d.p_value < 0.0001 ? d.p_value.toExponential(3) : d.p_value.toFixed(4),
       ]),
       hovertemplate:
         '<b>%{customdata[0]}</b><br>' +
         'log2FC: %{customdata[1]}<br>' +
-        'FDR (adj. p): %{customdata[2]}<br>' +
-        'p-value: %{customdata[3]}<extra></extra>',
+        'FDR (adj. p): %{customdata[2]}<extra></extra>',
     };
   };
 
@@ -64,10 +62,10 @@ export const VolcanoPlot: React.FC<VolcanoPlotProps> = ({
     name: `Top ${top10DEGs.length} Driver DEGs`,
     text: top10DEGs.map((d) => d.gene_id),
     textposition: 'top center',
-    textfont: { size: 11, color: '#f8fafc', family: 'JetBrains Mono, monospace' },
+    textfont: { size: 10, color: '#f8fafc', family: 'JetBrains Mono, monospace' },
     marker: {
       color: '#facc15', // Neon gold yellow ring
-      size: 11,
+      size: 10,
       symbol: 'circle-open',
       line: { color: '#facc15', width: 2 },
     },
@@ -86,20 +84,21 @@ export const VolcanoPlot: React.FC<VolcanoPlotProps> = ({
 
   const layout = {
     title: {
-      text: `Volcano Plot (log2FC vs -log10 FDR) — ${upGenes.length} Up, ${downGenes.length} Down`,
-      font: { color: '#f1f5f9', size: 14, family: 'Inter, sans-serif' },
+      text: `Volcano Plot — ${upGenes.length} Up, ${downGenes.length} Down`,
+      font: { color: '#f1f5f9', size: 13, family: 'Inter, sans-serif' },
     },
     xaxis: {
-      title: 'log2 Fold Change (Treatment vs Control)',
+      title: 'log2 Fold Change',
       zeroline: true,
       zerolinecolor: 'rgba(100, 116, 139, 0.4)',
+      automargin: true,
     },
     yaxis: {
-      title: '-log10 False Discovery Rate (-log10 FDR)',
+      title: '-log10(FDR)',
       zeroline: false,
+      automargin: true,
     },
     shapes: [
-      // Left vertical cutoff
       {
         type: 'line',
         x0: -log2fcCutoff,
@@ -109,7 +108,6 @@ export const VolcanoPlot: React.FC<VolcanoPlotProps> = ({
         yref: 'paper',
         line: { color: '#38bdf8', width: 1.5, dash: 'dash' },
       },
-      // Right vertical cutoff
       {
         type: 'line',
         x0: log2fcCutoff,
@@ -119,7 +117,6 @@ export const VolcanoPlot: React.FC<VolcanoPlotProps> = ({
         yref: 'paper',
         line: { color: '#f43f5e', width: 1.5, dash: 'dash' },
       },
-      // Horizontal FDR cutoff
       {
         type: 'line',
         x0: 0,
@@ -130,37 +127,21 @@ export const VolcanoPlot: React.FC<VolcanoPlotProps> = ({
         line: { color: '#facc15', width: 1.5, dash: 'dash' },
       },
     ],
-    annotations: [
-      {
-        xref: 'paper',
-        yref: 'paper',
-        x: 0.98,
-        y: 0.96,
-        text: `<span style="color:#f43f5e"><b>UP: ${upGenes.length}</b></span> | <span style="color:#38bdf8"><b>DOWN: ${downGenes.length}</b></span>`,
-        showarrow: false,
-        align: 'right',
-        bgcolor: 'rgba(15, 23, 42, 0.85)',
-        bordercolor: 'rgba(51, 65, 85, 0.6)',
-        borderwidth: 1,
-        borderpad: 6,
-        font: { size: 11 },
-      },
-    ],
     hovermode: 'closest',
   };
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between px-1">
-        <div className="flex items-center gap-2 text-xs text-slate-400">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 px-1">
+        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
           <span>Thresholds: <strong className="text-slate-200">|log2FC| ≥ {log2fcCutoff}</strong>, <strong className="text-slate-200">FDR ≤ {fdrCutoff}</strong></span>
         </div>
         <button
           onClick={() => setShowTopLabels(!showTopLabels)}
-          className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors min-h-[34px] cursor-pointer"
         >
           {showTopLabels ? <EyeOff className="w-3 h-3 text-amber-400" /> : <Eye className="w-3 h-3 text-amber-400" />}
-          <span>{showTopLabels ? 'Hide Top Gene Labels' : 'Show Top Gene Labels'}</span>
+          <span>{showTopLabels ? 'Hide Top Labels' : 'Show Top Labels'}</span>
         </button>
       </div>
 

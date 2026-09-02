@@ -140,10 +140,11 @@ export function DataTable<T extends Record<string, any>>({
   };
 
   return (
-    <div className="space-y-3">
-      {/* Controls Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-        <div className="flex flex-1 items-center gap-2 max-w-md">
+    <div className="space-y-3 w-full">
+      {/* Responsive Controls Bar */}
+      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+        {/* Search & Extra Filter */}
+        <div className="flex flex-col sm:flex-row flex-1 items-stretch sm:items-center gap-2">
           <div className="relative flex-1">
             <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
@@ -154,21 +155,23 @@ export function DataTable<T extends Record<string, any>>({
                 setCurrentPage(1);
               }}
               placeholder={searchPlaceholder}
-              className="w-full pl-9 pr-8 py-2 text-xs rounded-xl bg-slate-900/90 border border-slate-700/80 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition-colors"
+              className="w-full pl-9 pr-8 py-2.5 sm:py-2 text-xs rounded-xl bg-slate-900/90 border border-slate-700/80 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition-colors min-h-[42px]"
             />
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 p-1"
+                aria-label="Clear search"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-4 h-4" />
               </button>
             )}
           </div>
-          {extraFilter}
+          {extraFilter && <div className="shrink-0">{extraFilter}</div>}
         </div>
 
-        <div className="flex items-center gap-2 justify-between sm:justify-end">
+        {/* Action Buttons & Page size */}
+        <div className="flex flex-wrap items-center gap-2 justify-between sm:justify-end">
           <div className="flex items-center gap-1.5 text-xs text-slate-400 font-mono">
             <span>Show:</span>
             <select
@@ -177,7 +180,7 @@ export function DataTable<T extends Record<string, any>>({
                 setPageSize(Number(e.target.value));
                 setCurrentPage(1);
               }}
-              className="px-2 py-1 rounded-lg bg-slate-900 border border-slate-700 text-slate-200 text-xs focus:outline-none"
+              className="px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-slate-200 text-xs focus:outline-none min-h-[38px]"
             >
               <option value={10}>10</option>
               <option value={15}>15</option>
@@ -187,23 +190,23 @@ export function DataTable<T extends Record<string, any>>({
             </select>
           </div>
 
-          <span className="text-xs text-slate-400 font-mono px-2 py-1 rounded bg-slate-900/60 border border-slate-800">
+          <span className="text-xs text-slate-400 font-mono px-2.5 py-1.5 rounded-lg bg-slate-900/60 border border-slate-800 shrink-0">
             {sortedData.length.toLocaleString()} rows
           </span>
 
           <button
             onClick={copyTSV}
             title="Copy table to clipboard as TSV"
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-medium border border-slate-700/70 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-semibold border border-slate-700/70 transition-colors min-h-[38px] cursor-pointer"
           >
             {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-            <span className="hidden sm:inline">{copied ? 'Copied' : 'Copy'}</span>
+            <span>{copied ? 'Copied' : 'Copy'}</span>
           </button>
 
           <button
             onClick={exportCSV}
             title="Export filtered data to CSV"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-cyan-300 text-xs font-medium border border-slate-700/70 hover:border-cyan-500/30 transition-colors"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-cyan-300 text-xs font-semibold border border-slate-700/70 hover:border-cyan-500/30 transition-colors min-h-[38px] cursor-pointer"
           >
             <Download className="w-3.5 h-3.5 text-cyan-400" />
             <span>CSV</span>
@@ -211,9 +214,12 @@ export function DataTable<T extends Record<string, any>>({
         </div>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950/80 shadow-sm">
-        <table className="w-full text-left text-xs">
+      {/* Horizontal Scrolling Table Container */}
+      <div
+        className="w-full overflow-x-auto rounded-2xl border border-slate-800 bg-slate-950/80 shadow-sm"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
+        <table className="w-full text-left text-xs min-w-full">
           <thead className="bg-slate-900/90 text-slate-400 font-semibold border-b border-slate-800">
             <tr>
               {columns.map((col) => {
@@ -228,7 +234,7 @@ export function DataTable<T extends Record<string, any>>({
                   <th
                     key={col.key}
                     onClick={() => col.sortable && handleSort(col.key)}
-                    className={`px-3.5 py-2.5 select-none ${alignClass} ${
+                    className={`px-3 sm:px-4 py-3 select-none whitespace-nowrap ${alignClass} ${
                       col.sortable ? 'cursor-pointer hover:text-slate-200' : ''
                     }`}
                   >
@@ -242,12 +248,12 @@ export function DataTable<T extends Record<string, any>>({
                         <span className="text-slate-600">
                           {sortKey === col.key ? (
                             sortDirection === 'asc' ? (
-                              <ArrowUp className="w-3 h-3 text-cyan-400" />
+                              <ArrowUp className="w-3.5 h-3.5 text-cyan-400" />
                             ) : (
-                              <ArrowDown className="w-3 h-3 text-cyan-400" />
+                              <ArrowDown className="w-3.5 h-3.5 text-cyan-400" />
                             )
                           ) : (
-                            <ArrowUpDown className="w-3 h-3" />
+                            <ArrowUpDown className="w-3.5 h-3.5" />
                           )}
                         </span>
                       )}
@@ -270,7 +276,7 @@ export function DataTable<T extends Record<string, any>>({
                   {columns.map((col) => (
                     <td
                       key={col.key}
-                      className={`px-3.5 py-2.5 text-slate-300 ${
+                      className={`px-3 sm:px-4 py-2.5 sm:py-3 text-slate-300 whitespace-nowrap ${
                         col.align === 'right'
                           ? 'text-right'
                           : col.align === 'center'
@@ -288,40 +294,47 @@ export function DataTable<T extends Record<string, any>>({
         </table>
       </div>
 
-      {/* Pagination Footer */}
+      {/* Responsive Pagination Footer */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
-          <span>
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400 pt-1">
+          <span className="text-center sm:text-left">
             Page <strong className="text-slate-200">{currentPage}</strong> of <strong className="text-slate-200">{totalPages}</strong> (showing {paginatedData.length} of {sortedData.length})
           </span>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
             <button
               onClick={() => setCurrentPage(1)}
               disabled={currentPage === 1}
-              className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800"
+              aria-label="First page"
+              className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 min-h-[38px] min-w-[38px] flex items-center justify-center cursor-pointer"
             >
-              <ChevronsLeft className="w-3.5 h-3.5" />
+              <ChevronsLeft className="w-4 h-4" />
             </button>
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800"
+              aria-label="Previous page"
+              className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 min-h-[38px] min-w-[38px] flex items-center justify-center cursor-pointer"
             >
-              <ChevronLeft className="w-3.5 h-3.5" />
+              <ChevronLeft className="w-4 h-4" />
             </button>
+            <span className="px-3 py-1.5 font-mono text-xs font-bold text-slate-200 bg-slate-900/60 rounded-xl border border-slate-800">
+              {currentPage} / {totalPages}
+            </span>
             <button
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800"
+              aria-label="Next page"
+              className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 min-h-[38px] min-w-[38px] flex items-center justify-center cursor-pointer"
             >
-              <ChevronRight className="w-3.5 h-3.5" />
+              <ChevronRight className="w-4 h-4" />
             </button>
             <button
               onClick={() => setCurrentPage(totalPages)}
               disabled={currentPage === totalPages}
-              className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800"
+              aria-label="Last page"
+              className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 min-h-[38px] min-w-[38px] flex items-center justify-center cursor-pointer"
             >
-              <ChevronsRight className="w-3.5 h-3.5" />
+              <ChevronsRight className="w-4 h-4" />
             </button>
           </div>
         </div>

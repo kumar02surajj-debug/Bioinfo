@@ -65,7 +65,7 @@ export const SurvivalKMPlot: React.FC<SurvivalKMPlotProps> = ({ data }) => {
       name: `${name} Censored (+)`,
       marker: {
         symbol: 'cross',
-        size: 8,
+        size: 7,
         color: color,
         line: { color: '#ffffff', width: 1 },
       },
@@ -78,13 +78,13 @@ export const SurvivalKMPlot: React.FC<SurvivalKMPlotProps> = ({ data }) => {
 
   const highTraces = createGroupTraces(
     high_group,
-    'High Expression (≥ Cutoff)',
+    'High (≥ Cutoff)',
     '#f43f5e',
     'rgba(244, 63, 94, 0.12)'
   );
   const lowTraces = createGroupTraces(
     low_group,
-    'Low Expression (< Cutoff)',
+    'Low (< Cutoff)',
     '#38bdf8',
     'rgba(56, 189, 248, 0.12)'
   );
@@ -96,23 +96,27 @@ export const SurvivalKMPlot: React.FC<SurvivalKMPlotProps> = ({ data }) => {
 
   const layout = {
     title: {
-      text: `Kaplan-Meier Survival Estimation: ${gene_id} (Cutoff: ${data.cutoff_value.toFixed(2)})`,
-      font: { color: '#f1f5f9', size: 14, family: 'Inter, sans-serif' },
+      text: `Kaplan-Meier Survival: ${gene_id} (Cutoff: ${data.cutoff_value.toFixed(2)})`,
+      font: { color: '#f1f5f9', size: 13, family: 'Inter, sans-serif' },
     },
     xaxis: {
       title: 'Follow-up Time (Months)',
       zeroline: true,
       zerolinecolor: 'rgba(100, 116, 139, 0.4)',
+      automargin: true,
     },
     yaxis: {
-      title: 'Overall Survival Probability (%)',
+      title: 'Survival Probability (%)',
       range: [0, 105],
       zeroline: true,
       zerolinecolor: 'rgba(100, 116, 139, 0.4)',
+      automargin: true,
     },
     legend: {
-      x: 0.65,
-      y: 0.95,
+      orientation: 'h',
+      y: 1.12,
+      x: 0,
+      font: { color: '#cbd5e1', size: 10 },
       bgcolor: 'rgba(15, 23, 42, 0.85)',
       bordercolor: 'rgba(51, 65, 85, 0.6)',
       borderwidth: 1,
@@ -121,24 +125,25 @@ export const SurvivalKMPlot: React.FC<SurvivalKMPlotProps> = ({ data }) => {
       {
         xref: 'paper',
         yref: 'paper',
-        x: 0.04,
+        x: 0.03,
         y: 0.12,
         text:
           `<b>Log-rank p:</b> ${formattedP}<br>` +
-          `<b>Hazard Ratio:</b> ${hazard_ratio.toFixed(2)} [95% CI: ${hr_ci_lower.toFixed(2)} - ${hr_ci_upper.toFixed(2)}]`,
+          `<b>HR:</b> ${hazard_ratio.toFixed(2)} [95% CI: ${hr_ci_lower.toFixed(2)}-${hr_ci_upper.toFixed(2)}]`,
         showarrow: false,
         align: 'left',
         bgcolor: 'rgba(15, 23, 42, 0.9)',
         bordercolor: '#475569',
         borderwidth: 1,
-        borderpad: 6,
-        font: { color: '#f8fafc', size: 11, family: 'JetBrains Mono, monospace' },
+        borderpad: 5,
+        font: { color: '#f8fafc', size: 10, family: 'JetBrains Mono, monospace' },
       },
     ],
+    margin: { l: 60, r: 25, t: 55, b: 50 },
   };
 
   return (
-    <div className="min-h-[440px]">
+    <div className="min-h-[420px]">
       <PlotWrapper
         data={[...highTraces, ...lowTraces]}
         layout={layout}

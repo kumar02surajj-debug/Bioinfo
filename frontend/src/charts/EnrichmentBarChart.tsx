@@ -15,7 +15,7 @@ export const EnrichmentBarChart: React.FC<EnrichmentBarChartProps> = ({
 
   const cleanTerms = topItems.map((d) => {
     const t = d.term.split(' (GO:')[0];
-    return t.length > 45 ? `${t.slice(0, 42)}...` : t;
+    return t.length > 35 ? `${t.slice(0, 32)}...` : t;
   });
 
   const negLogFdr = topItems.map((d) => -Math.log10(Math.max(1e-50, d.adj_p_value)));
@@ -51,19 +51,20 @@ export const EnrichmentBarChart: React.FC<EnrichmentBarChartProps> = ({
 
   const layout = {
     title: {
-      text: `Significance Bar Chart (Top ${topItems.length} Enriched Pathways)`,
-      font: { color: '#f1f5f9', size: 14, family: 'Inter, sans-serif' },
+      text: `Pathway Significance Bar Chart (Top ${topItems.length} Terms)`,
+      font: { color: '#f1f5f9', size: 13, family: 'Inter, sans-serif' },
     },
     xaxis: {
       title: '-log10 False Discovery Rate (-log10 FDR)',
       zeroline: true,
       zerolinecolor: 'rgba(100, 116, 139, 0.4)',
+      automargin: true,
     },
     yaxis: {
       automargin: true,
-      tickfont: { size: 11, color: '#cbd5e1', family: 'Inter, sans-serif' },
+      tickfont: { size: 10, color: '#cbd5e1', family: 'Inter, sans-serif' },
     },
-    margin: { l: 240, r: 40, t: 45, b: 60 },
+    margin: { l: 140, r: 35, t: 45, b: 55 },
   };
 
   return (
@@ -72,7 +73,7 @@ export const EnrichmentBarChart: React.FC<EnrichmentBarChartProps> = ({
       layout={layout}
       title={`Pathway Significance Bar Chart (Top ${topItems.length})`}
       filename="transcriptox_enrichment_barchart"
-      style={{ minHeight: '480px' }}
+      style={{ minHeight: '440px' }}
     />
   );
 };

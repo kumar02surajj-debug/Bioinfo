@@ -57,9 +57,9 @@ export const ClusterHeatmap: React.FC<ClusterHeatmapProps> = ({
     zmin: -2.5,
     zmax: 2.5,
     colorbar: {
-      title: 'Expression<br>Z-Score',
-      tickfont: { color: '#94a3b8', size: 10, family: 'JetBrains Mono, monospace' },
-      titlefont: { color: '#cbd5e1', size: 11, family: 'Inter, sans-serif' },
+      title: 'Z-Score',
+      tickfont: { color: '#94a3b8', size: 9, family: 'JetBrains Mono, monospace' },
+      titlefont: { color: '#cbd5e1', size: 10, family: 'Inter, sans-serif' },
     },
     hovertemplate:
       '<b>Gene:</b> %{y}<br>' +
@@ -68,42 +68,44 @@ export const ClusterHeatmap: React.FC<ClusterHeatmapProps> = ({
   };
 
   // Adjust plot height dynamically
-  const dynamicHeight = Math.min(1000, Math.max(440, data.gene_ids.length * 18));
+  const dynamicHeight = Math.min(1000, Math.max(420, data.gene_ids.length * 18));
 
   const layout = {
     title: {
       text: `Hierarchical Clustered Heatmap (${data.gene_ids.length} Genes x ${data.sample_ids.length} Samples)`,
-      font: { color: '#f1f5f9', size: 14, family: 'Inter, sans-serif' },
+      font: { color: '#f1f5f9', size: 13, family: 'Inter, sans-serif' },
     },
     xaxis: {
       tickangle: -45,
-      tickfont: { color: '#cbd5e1', size: 10, family: 'JetBrains Mono, monospace' },
+      tickfont: { color: '#cbd5e1', size: 9, family: 'JetBrains Mono, monospace' },
+      automargin: true,
     },
     yaxis: {
       autorange: 'reversed',
+      automargin: true,
       tickfont: {
         color: (data.gene_ids.map((g) => (g === highlightGene ? '#38bdf8' : '#94a3b8')) as any),
-        size: data.gene_ids.length > 60 ? 8 : 10,
+        size: data.gene_ids.length > 60 ? 8 : 9,
         family: 'JetBrains Mono, monospace',
       },
     },
-    margin: { l: 110, r: 50, t: 45, b: 90 },
+    margin: { l: 80, r: 40, t: 45, b: 70 },
   };
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between px-1">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 px-1">
         <div className="flex items-center gap-2 text-xs text-slate-400">
           <span>
             Clustering: <strong className="text-purple-400">{data.linkage_method}</strong> linkage, <strong className="text-cyan-400">{data.distance_metric}</strong> distance
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <Palette className="w-3.5 h-3.5 text-slate-400" />
+          <Palette className="w-3.5 h-3.5 text-slate-400 shrink-0" />
           <select
             value={colorScheme}
             onChange={(e) => setColorScheme(e.target.value)}
-            className="px-2.5 py-1 text-xs rounded-lg bg-slate-800 border border-slate-700 text-slate-200 focus:outline-none focus:border-cyan-500 font-medium"
+            className="px-2.5 py-1 text-xs rounded-lg bg-slate-800 border border-slate-700 text-slate-200 focus:outline-none focus:border-cyan-500 font-medium min-h-[34px]"
           >
             <option value="RdBu_r">Diverging (Blue-Slate-Red)</option>
             <option value="Coolwarm">Coolwarm (Blue-White-Red)</option>

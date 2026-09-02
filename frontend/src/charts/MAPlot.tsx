@@ -1,9 +1,9 @@
 import React from 'react';
-import type { DEGItem } from '../types';
+import type { VolcanoPoint } from '../types';
 import { PlotWrapper } from './PlotWrapper';
 
 interface MAPlotProps {
-  data: DEGItem[];
+  data: VolcanoPoint[];
   log2fcCutoff: number;
 }
 
@@ -12,7 +12,7 @@ export const MAPlot: React.FC<MAPlotProps> = ({ data, log2fcCutoff }) => {
   const downGenes = data.filter((d) => d.status === 'DOWN');
   const notSigGenes = data.filter((d) => d.status === 'NOT_SIG');
 
-  const createTrace = (subset: DEGItem[], name: string, color: string) => {
+  const createTrace = (subset: VolcanoPoint[], name: string, color: string) => {
     return {
       x: subset.map((d) => d.base_mean),
       y: subset.map((d) => d.log2fc),
@@ -34,7 +34,7 @@ export const MAPlot: React.FC<MAPlotProps> = ({ data, log2fcCutoff }) => {
       ]),
       hovertemplate:
         '<b>%{customdata[0]}</b><br>' +
-        'Mean Expression (A): %{customdata[1]}<br>' +
+        'Mean Expr (A): %{customdata[1]}<br>' +
         'log2FC (M): %{customdata[2]}<br>' +
         'FDR: %{customdata[3]}<extra></extra>',
     };
@@ -49,17 +49,19 @@ export const MAPlot: React.FC<MAPlotProps> = ({ data, log2fcCutoff }) => {
   const layout = {
     title: {
       text: `MA Plot (Mean Log Expression vs log2FC)`,
-      font: { color: '#f1f5f9', size: 14, family: 'Inter, sans-serif' },
+      font: { color: '#f1f5f9', size: 13, family: 'Inter, sans-serif' },
     },
     xaxis: {
-      title: 'Average Normalized Expression [A = 0.5 * (Mean_Trt + Mean_Ctrl)]',
+      title: 'Average Normalized Expression (A)',
       zeroline: true,
       zerolinecolor: 'rgba(100, 116, 139, 0.4)',
+      automargin: true,
     },
     yaxis: {
-      title: 'log2 Fold Change [M]',
+      title: 'log2 Fold Change (M)',
       zeroline: true,
       zerolinecolor: 'rgba(100, 116, 139, 0.4)',
+      automargin: true,
     },
     shapes: [
       {
