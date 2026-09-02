@@ -25,11 +25,23 @@ logger = logging.getLogger("transcriptox.services.qc")
 def normalize_cpm_log2(raw_counts: pd.DataFrame, prior_count: float = 1.0) -> pd.DataFrame:
     """
     Computes standard log2(CPM + 1) normalized expression matrix.
-    CPM = (raw_counts / library_size) * 1e6
-    log2_CPM = log2(CPM + prior_count)
+    
+    If the expression matrix is already log-transformed or pre-normalized (max value <= 50.0),
+    returns raw_counts directly to avoid double-normalization log2FC compression.
     """
+    vals = raw_counts.values.astype(np.float64)
+    max_val = float(np.nanmax(vals)) if vals.size > 0 else 0.0
+    min_val = float(np.nanmin(vals)) if vals.size > 0 else 0.0
+
+    # If max value <= 50.0 and min >= 0.0, the matrix is already log-scale/normalized!
+    if max_val <= 50.0 and min_val >= 0.0 and max_val > 0.0:
+        logger.info(
+            "Expression matrix is pre-normalized / log-transformed (max=%.2f, min=%.2f). Using directly.",
+            max_val, min_val,
+        )
+        return raw_counts.copy()
+
     lib_sizes = raw_counts.sum(axis=0)
-    # Avoid zero division if any library size is zero
     lib_sizes = lib_sizes.replace(0, 1.0)
     cpm = (raw_counts / lib_sizes) * 1e6
     log2_cpm = np.log2(cpm + prior_count)

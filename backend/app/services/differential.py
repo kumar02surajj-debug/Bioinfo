@@ -47,41 +47,47 @@ def _welch_ttest_vectorized(
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Fully vectorized Welch's two-sample t-test across all genes simultaneously.
-
-    Uses plain NumPy arithmetic (no scipy masked-array complications from
-    nan_policy='omit') and calls scipy.stats.t.sf once on the full array.
+    Uses np.nanmean and np.nanvar to handle any missing/NaN sample values gracefully.
 
     Returns
     -------
     t_stat : np.ndarray, shape (n_genes,)
     p_values : np.ndarray, shape (n_genes,)  — two-tailed, clipped to [1e-300, 1.0]
     """
-    n_a = a.shape[1]
-    n_b = b.shape[1]
     n_genes = a.shape[0]
 
-    mean_a = a.mean(axis=1)
-    mean_b = b.mean(axis=1)
-
-    # Sample variances (ddof=1); for n==1 variance is undefined → set to 0
-    var_a = a.var(axis=1, ddof=1) if n_a > 1 else np.zeros(n_genes)
-    var_b = b.var(axis=1, ddof=1) if n_b > 1 else np.zeros(n_genes)
-
-    # Welch-Satterthwaite standard error and degrees of freedom
-    se2_a = var_a / n_a  # variance of the mean for group a
-    se2_b = var_b / n_b  # variance of the mean for group b
-    se2_sum = se2_a + se2_b
+    a_valid = np.isfinite(a)
+    b_valid = np.isfinite(b)
+    n_a_valid = np.sum(a_valid, axis=1)
+    n_b_valid = np.sum(b_valid, axis=1)
 
     with np.errstate(divide="ignore", invalid="ignore"):
+        mean_a = np.nanmean(a, axis=1)
+        mean_b = np.nanmean(b, axis=1)
+
+        # Sample variances (ddof=1)
+        var_a = np.nanvar(a, axis=1, ddof=1)
+        var_b = np.nanvar(b, axis=1, ddof=1)
+
+        var_a = np.where(n_a_valid > 1, np.nan_to_num(var_a, nan=0.0), 0.0)
+        var_b = np.where(n_b_valid > 1, np.nan_to_num(var_b, nan=0.0), 0.0)
+
+        # Welch-Satterthwaite standard error
+        se2_a = np.where(n_a_valid > 0, var_a / np.maximum(n_a_valid, 1), 0.0)
+        se2_b = np.where(n_b_valid > 0, var_b / np.maximum(n_b_valid, 1), 0.0)
+        se2_sum = se2_a + se2_b
+
+        # Welch t-statistic
         t_stat = np.where(se2_sum > 0, (mean_a - mean_b) / np.sqrt(se2_sum), 0.0)
 
         # Welch-Satterthwaite degrees of freedom
         num = se2_sum ** 2
-        denom = (se2_a ** 2) / max(n_a - 1, 1) + (se2_b ** 2) / max(n_b - 1, 1)
+        denom = np.where(n_a_valid > 1, (se2_a ** 2) / np.maximum(n_a_valid - 1, 1), 0.0) + \
+                np.where(n_b_valid > 1, (se2_b ** 2) / np.maximum(n_b_valid - 1, 1), 0.0)
         df = np.where(denom > 0, num / denom, 1.0)
         df = np.maximum(df, 1.0)  # df must be >= 1
 
-        # Two-tailed p-value: P(|T| >= |t|) = 2 * sf(|t|, df)
+        # Two-tailed p-value
         p_values = 2.0 * stats.t.sf(np.abs(t_stat), df)
 
     # Sanitise: any NaN/Inf → 1.0 (uninformative, no evidence)
@@ -314,9 +320,9 @@ def compute_differential_expression(
     trt_matrix  = norm_df[trt_samples].values.astype(np.float64)
 
     # ---- Means & base mean ------------------------------------------ #
-    ctrl_means = ctrl_matrix.mean(axis=1)   # (n_genes,)
-    trt_means  = trt_matrix.mean(axis=1)    # (n_genes,)
-    base_means = (ctrl_matrix.sum(axis=1) + trt_matrix.sum(axis=1)) / (n_ctrl + n_trt)
+    ctrl_means = np.nanmean(ctrl_matrix, axis=1)
+    trt_means  = np.nanmean(trt_matrix, axis=1)
+    base_means = np.nanmean(np.hstack([ctrl_matrix, trt_matrix]), axis=1)
 
     # Log2FC = mean(treatment) − mean(control) on log2-CPM scale
     log2fc_values = trt_means - ctrl_means
